@@ -553,7 +553,7 @@ In the above diagram, the first things we observe from the root node is that out
 
 1. Find the leaf node with the darkest shade of red color.  Then, double-click on the leaf node to select all nodes in the path leading up to the node. This will highlight the path and display the feature condition for each node in the path.
 
-![Tree map High error rate](2-ea-tree-highest-error.png)
+![Tree map High error rate](/img/2-ea-tree-highest-error.png)
 
 2. Click on the **Save as a new cohort** button on the upper right-hand side of the error analysis component. Note:  The dashboard displays the “Filters” with the feature conditions of the nodes in the path selection
 
@@ -567,7 +567,7 @@ As much as it’s advantageous in finding out why the model is performing poorly
 
 1. Find the leaf node with the lightest shade of gray color and the lowest error rate when you hover the mouse over the node.  Then, double-click on the leaf node to select all nodes in the path leading up to the node. This will highlight the path and display the feature condition for each node in the path.
 
-![Tree map Low error rate](4-ea-tree-lowest-error.png)
+![Tree map Low error rate](/img/4-ea-tree-lowest-error.png)
 
 2. Click on the **Save as a new cohort** button on the upper right-hand side of the error analysis component. Note:  The dashboard displays the “Filters” with the feature conditions of the nodes in the path selection
 
