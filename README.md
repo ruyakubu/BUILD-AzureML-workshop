@@ -97,17 +97,19 @@ In the previous lab, we used the diabetes hospital readmission dataset to unders
 
 Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace.  The authorization needs the subscription id, resource group, and name of the Azure ML workspace.
 
+
+```json
+{
+    "subscription_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "resource_group": "myResourceGroup",
+    "workspace_name": "myWorkspace"
+}
+```
+
 ```python
 registry_name = "azureml"
 credential = DefaultAzureCredential()
-ml_client =  MLClient.from_config(credential=credential)
-
-ml_client_registry = MLClient(
-    credential=credential,
-    subscription_id=ml_client.subscription_id,
-    resource_group_name=ml_client.resource_group_name,
-    registry_name=registry_name
-    )
+ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
 ```
 
 ## Task 2: Register the dataset
@@ -499,6 +501,10 @@ Terrific…you now have an RAI dashboard.
 In this exercise, you will use the RAI dashboard to debug the diabetes hospital readmission classification model. Traditional machine learning performance metrics provide aggregated calculations which are insufficient to understand model errors distribution or if the model is behaving responsibly. The RAI dashboard provides a way to analysis where there are disparities in the model’s predictions, and understand the features that influence the model’s predictions. This exercise will explore area where there could be fairness, inclusiveness or reliability & safety issues.
 
 ## Task 1: Error Analysis
+
+While the overall performance metrics such as classification accuracy, precision, recall or MAE scores are good proxies to help you build trust with your model, they are insufficient in locating where in data the model has inaccuracies.  Machine Learning model often have errors that are not distributed uniformly in your underlying dataset.  Although the overall model may have a high accuracy, there may be a subset of data that the model is not performing well on.  This subset of data may be a crucial demographic you do not want the model to make error on.   This this exercise, you will use the Error Analysis component of the RAI dashboard to identify where the model has a high error rate.
+
+
 ## Task 2: Model Overview
 ## Task 3: Data Analysis
 ## Task 4: Feature Importance
