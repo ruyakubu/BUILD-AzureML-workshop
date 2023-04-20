@@ -1,11 +1,26 @@
 
-In this lab you’ll be learning the end-to-end machine learning process that involves data preparation, training a model, registering the model and debug them.  First you will go through the process of training the model locally.   Then you will learn how to make your machine learning model training process more dynamic, manageable and scalable in the cloud using Azure Machine Learning service. For the workshop we’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital with 30 days of being discharged.  To prep the data to be used for training our model we are going to review our dataset to cleanse any redundant data, missing values, reformat data or delete any irrelevant data that will be used for our use case.  After the data has been clean, we’ll train.  
+In this lab, you’ll be learning the end-to-end machine learning process that involves data preparation, training a model, registering the model and debugging it to perform responsibly.  First you will go through the process of training the model locally.   Then you will learn how to make your machine learning model training process more dynamic, manageable, and scalable in the cloud using the Azure Machine Learning service. For the workshop we’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.  
+
+# Prerequisites
+1. Clone the lab repository into your local machine.
+```bash
+git clone https://github.com/ruyakubu/BUILD-AzureML-workshop.git
+```
+2. Change directory into the lab folder
+```bash
+cd BUILD-AzureML-workshop
+```
+3. Open the lab folder in Visual Studio Code. (Or Jupyter Notebook)
+4. Then open the *1-dataprep-and-training-local.ipynb* notebook.
+5. Click on the **Run All** button on the top of the notebook to run the notebook.
 
 # Exercise 1:  Training a model locally
 
-## Task #1: Data Prep
+To prepare the data to be used for training our model we are going to review our dataset to cleanse any redundant data, missing values, reformat data or delete any irrelevant data that will be used for our use case. After the data has been cleansed, we’ll train the model. 
 
-For this exercise, you’ll load the **1-dataprep-and-training-local.ipynb** jupyter notebook.
+## Task #1: Data Preparation
+
+For this exercise, you’ll need to load the **1-dataprep-and-training-local.ipynb** jupyter notebook.
 
 The first thing we need is to read the hospital diabetes data into a dataframe that will allow us to visualize and perform data manipulation.  To do this will be using the read_csv function from the “pandas” library.  
 
@@ -13,19 +28,21 @@ The first thing we need is to read the hospital diabetes data into a dataframe t
 df = pd.read_csv('diabetic_data.csv')
 ```
 
-Next, take a look at the size of the data to verify that it will be sufficient for our training.  As you can see 101,766 is a very large data set.  
+*Understanding the dataset*
 
-Let’s display the dataframe to see what kind of diabetes is in the hospital data.  As you can see it have the patient race, gender, age, weight, their prior hospitalization inform, prescribed medication and whether or not they were readmitted back to the hospital.  
+We'll check the size of the data to verify that it will be sufficient for our training. As you can see 101,766 is a very large dataset, which is good.
+
+Let’s display the dataframe to see what kind of features are in the diabetes patients’ hospital data. As you can see it contains the patient’s race, gender, age, weight, their prior hospital visits, lab results, prescribed medications they are taking and whether or not they were readmitted back to the hospital. 
 
 *Checking for special characters*
 
-One of the invalid data that stands out from the Weight column is the “?” special characters that are used as fillers in our dataset.  We’ll loop through the dataset to identify columns that have this special character.
+One of the invalid data you can observe from the results is from the *weight* column.  It has a “?” special character as its possible values.  We’ll loop through all the results to identify other columns that many have this special character.
 
 ```python
 print(df.loc[: , (df == '?').any()])
 ```
 
-The output shows that that race, weight, payer_code, medical_specialty, diag_1, diag_2, and diag_3 are the column with missing values that have the special character.  To fix this we’ll change the character to null by using the numpy NAN function.
+The output shows that that race, weight, payer_code, medical_specialty, diag_1, diag_2, and diag_3 are the columns that also have this special character.  To fix this we’ll change the character to null by using the numpy NAN function.
 
 ```python
 df = df.replace('?', np.NaN) 
@@ -37,7 +54,12 @@ df = df.replace('?', np.NaN)
 print(df.isna().any())
 ```
 
-When we run the “isna” function on the dataframe, we can see that there are 7 columns with null values in our dataset.  Depending on the number of null values that a column has, we’ll keep or delete the column.  As we count the columns with a high number of null values from the weight column.  Although, Weight is liking to impact a diabetes patient’s readmission status, a majority of it’s values are null.   Race is another column that has 12% of its values missing.  This is not a signification number; we can drop the null values.  The null values from payer_code and medical_specialty are significant either, so can drop the fields.
+When we run the *“isna”* function on the dataframe, we can see that there are 7 columns with null values in our dataset. Depending on the number of null values that a column has, we’ll keep or delete the column. 
+
+* As we count the number of columns with null values, weight is the column with the highest null count. Although *weight* is likely to impact a diabetes patient’s readmission status, 97% of its values are null. So, this column is useless since a majority of the patients’s weight will be missing.  
+* *Race* is another column that has 12% of its values missing. This is not a signification number;  hence we can drop just the null values. 
+* The null values from *payer_code* and *medical_specialty* are not noteable either, so can drop the null values.
+
 
 ```python
 df = df.dropna()
@@ -45,14 +67,14 @@ df = df.dropna()
 
 *Deleting irrelevant columns*
 
-The patient's form of payment does not have impact on the return to the hospital, so we dropped the Payer_Code. However, we added the Medicare and Medicaid column to indicate whether or not the Payer_Code for the hospital bill used a subsidize government medical assistance for low-income patients. This is to help us understand if there are any socioeconomic gaps in the diabetic patient demographic.
+A patient’s form of payment does not have impact on their return to the hospital, so we’ll drop the *payer_code*. However, we added *medicare* and *medicaid* as new columns to indicate whether or not the hospital bill was paid using a subsidize government medical assistance for low-income individuals. This can help us understand if there are any socioeconomic gaps in the diabetes patient demographic.
 
 ```python
 df.loc[:, "medicare"] = (df.payer_code == "MC")
 df.loc[:, "medicaid"] = (df.payer_code == "MD")
 ```
 
-There are 20+ columns of whether or not a patient took a certain diabetic medication (rosiglitazon, citoglipton, metformin etc.) that have no correlation on a patient's return to the hospital.  As result, we’ll delete these medications.
+There are 20+ columns that are indicators of whether or not a patient took a certain diabetic medication (rosiglitazon, citoglipton, metformin etc.) that have no correlation on a patient’s return to the hospital. As result, we’ll delete these medications.
 
 ```python
 df.drop(['encounter_id', 'patient_nbr', 'weight', 'payer_code', 'medical_specialty', 'admission_type_id', 
@@ -61,17 +83,17 @@ df.drop(['encounter_id', 'patient_nbr', 'weight', 'payer_code', 'medical_special
         'glyburide-metformin','glipizide-metformin','glimepiride-pioglitazone','metformin-rosiglitazone','metformin-pioglitazone', 'diag_2', 'diag_3', 'change'], axis=1, inplace=True)
 ```
 
-Lastly, unique patient numbers or hospital record identifications do not have value to model.    Also, a patient’s first, second or third diagnosis while that were hospitalized may be useful , but are too random from patient to patient.
+Lastly, unique patient numbers or hospital record identifications do not add value to the model. Also, a patient’s first, second or third diagnosis while that were hospitalized may be useful, but are too random from patient to patient.
 
 *Formatting data*
 
-Part of working with data is formatting the columns or values into names that are more meaningful and easier to understand.  Here we’ll change the readmitted outcome from NO or <30.
+* Part of working with data is formatting the columns or values into names that are more meaningful and easier to understand. For example, we’ll change the readmitted values of NO or <30 to “not readmitted" and “readmitted” respectively.
 
 ```python
 df['readmitted'] = df['readmitted'].replace({"NO":"not readmitted", "<30":"readmitted"})
 ```
 
-Next, the age group are represented in brackets.  For example, [0 - 10] denotes the age between 0 and 10 years old.  In addition, since there’s a small sample size of patients in this age group will consolidate the age groups.
+* Next, the age group are represented in brackets. For example, [0 - 10] denotes the age between 0 and 10 years old. In addition, since there’s a small sample size of patients in this age group will consolidate the age groups into easier to understand groups.
 
 ```python
 df.loc[:, "age"] = df["age"].replace( ["[0-10)", "[10-20)", "[20-30)"], "30 years or younger")
@@ -79,23 +101,35 @@ df.loc[:, "age"] = df["age"].replace(["[30-40)", "[40-50)", "[50-60)"], "30-60 y
 df.loc[:, "age"] = df["age"].replace(["[60-70)", "[70-80)", "[80-90)", "[90-100)"], "Over 60 years")
 ```
 
+* Sometimes there are different codes that fall under one category.  Unless the individual codes play a role in your use case, it’s better to aggregate the codes into a category.  For the *primary_diagnosis*, *discharge_destination* and *admission_source* column we will combine the value into their respective medical categories.
+
 ## Task # 2:  Training data
 
-Now that the data has been cleansed, it is ready to be used for training our model.  To do this we will split out data into training and testing data sets with scikit-learns train_test_spilt function.  This is optional, but we will store our data for later use.  The file format we’ll use for our dataset is parquet.
+Now that the data has been cleansed, it is ready to be used to train our diabetes hospital readmission classification model. We’ll need to split the training and testing datasets with scikit-learn’s *train_test_spilt* function. Then, we'll format dataset to a parquet file.  The data files will be store on the local machine to used later.
 
-Next, to normalize our data, we’ll create a helper function that identified all the indices for the non-numeric columns.   Scikit-Learn’s OneHotEncoder will be used to encode all the string or object columns.  Next, we’ll use the StandardScalar to encode the number column fields.  The ColumnTransformer will be use to perform the data transformation.   Where create a pipeline to put all of these prepressing tasks for the model to execute before training the model.
+Next, to normalize our data, we’ll create a helper function that identifies all the indices for the non-numeric columns. Scikit-Learn’s *OneHotEncoder* will be used to encode all the string or object columns. The *StandardScalar* will be used to encode the number column fields. Then, the *ColumnTransformer* will perform the data transformations. We'll create a pipeline to put all these preprocessing tasks before training the model.
 
-For our diabetes readmission classification, we use the LogisticRegression model on our dataset.
+For our diabetes readmission classification, we’ll use the LogisticRegression model on our dataset.
 
-After training the model, we can review the accuracy score to evaluate how well our trained model performed.   The score of 0.86 looks good.
+After training the model, we can review the accuracy score to evaluate how well our trained model performed. 
+
+Well done...the score of 0.85 looks good.
 
 # Exercise 2:  Training a model in the cloud
 
-In the previous lab, we used the diabetes hospital readmission dataset to understand and wrangled data into a clean dataset to train a classification model to predication whether a diabetics patient would be readmitted back to a hospital within 30 days of being discharge.  All of this done on the local machine.   In this session, you will learn how to train a model in the cloud using the end-to-end streamline process to make your model reproduceable, easier to manage, and scalable. 
+In the previous exercise, we used the diabetes hospital readmission dataset to understand and wrangled data into a clean dataset to train a classification model to predict whether a diabetic patient would be readmitted back to a hospital within 30 days of being discharge. All of this was done on the local machine. In this session, you will learn how to train a model in the cloud using the end-to-end streamline process to make your model reproduceable, easier to manage, and scalable. 
 
-## Task# 1: Create a cloud client*
+## Prerequisites
+1. Open the Azure Machine Learning studio at https://ml.azure.com
+2. Click on *Notebooks* on the left navigation menu.
+3. Under your username, click on *Upload folder* option and upload the *BUILD-AzureML-workshop* directory that your clone in the last exercise.
+4. Then open the *2-compute-training-job-cloud.ipynb* notebook.
+
+## Task# 1: Create a cloud client
 
 Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace.  The authorization needs the subscription id, resource group, and name of the Azure ML workspace.
+
+You'll need to populate the following variables with your Azure subscription id, resource group, and Azure ML workspace name.
 
 
 ```json
@@ -114,9 +148,8 @@ ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, 
 
 ## Task 2: Register the dataset
 
-Data preparation is a long and tedious process the takes up a majority of the machine learning process.  After you have cleanse into a good state, Azure Machine Learning provides datastores for you to register and store your datasets to.  Your dataset is stored in one location, but it can be referenced as a point without having to move the data.  The benefit of registering your datasets is, individuals on your team can reference them; and you can track all the experiments that used. 
-
-We are going to use the training and testing data that you used in Lab#1 and register it to the cloud.   To register the files to Azure, we need to use the connect client.  In the case, we need to specify the locally directory path.  The AssetTypes.URI_FILE specifies what time of data file we are using.
+Data preparation is a long and tedious process the takes up most of the machine learning process. After you have cleansed the data into a good state, Azure Machine Learning provides datastores for you to register and store your datasets to. Your dataset is stored in one location, but it can be referenced as a pointer to the location without having to move the data. The benefit of registering your datasets is, individuals on your team can reference them; and you can track all the experiments that used it.
+We are going to use the training and testing data that you used in exercise #1 and register it to the cloud. To register the files to Azure, we need to use the connect client. In this case, we need to specify the locally directory path. The AssetTypes.URI_FILE specifies what type of data file we are using.
 
 ```python
 import os
@@ -144,7 +177,7 @@ te_data = ml_client.data.create_or_update(testing_data)
 
 ## Task 3: Create a Compute
 
-To run a job or machine learning computation, we need to create a compute instance.  You can create none in notebook or use existing one.  To create a compute, you need a name and the size of the instance.  You can also specify how you and the instance to scare during runtime.
+To run a job or machine learning computation, we need to create a compute instance. You can create one from a notebook or use an existing one. To create a compute, you need a name and the size of the instance. You can also specify how you want the instance to scale during runtime.
 
 ```python
 from azure.ai.ml.entities import AmlCompute
@@ -169,13 +202,14 @@ else:
 
 ## Task 4: Create an environment
 
-An environment specifies all the dependencies that a task or job that you need to run need.  This can include python version, docker file, python libraries, etc.  You have the option of creating a custom environment from scratch that suits your needs or use one of the Azure Machine Learning curated environments available.  In our case, we are using Responsible AI’s out of the box curated environment: *AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu* since we’ll need needing it in the next lab. (**NOTE**:  Select the Environments tab in Azure Machine Learn Studio to see the available environments) 
+An environment specifies all the dependencies that a task or job needs to run. This can include python version, docker file, python libraries, etc. You have the option of creating a custom environment from scratch that suits your needs or use one of the Azure Machine Learning curated environments available. In our case, we are using Responsible AI’s out of the box curated environment: AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu since we’ll need it in the next lab. (**NOTE**:  Select the Environments tab in Azure Machine Learn Studio to see the available environments) 
 
 ## Task 5: Define the training model
 
-We’ll be using Azure Machine Learning components to divide the experiment into different tasks. Components are reusable independent units of tasks that have inputs and output in machine learning (e.g., data cleaning, training a model, registering a model, deploying a model etc.). For our experiment, we will create a component for training a model. The component will consist of a python training code with inputs and outputs.
- 
+We’ll be using Azure Machine Learning components to divide the experiment into different tasks. Components are reusable independent units of tasks that have inputs and output in machine learning (e.g., data cleansing, training a model, registering a model, deploying a model etc.). For our experiment, we will create a component for training a model. The component will consist of a python training code with inputs and outputs.
+
 The first thing to define in our python code is the training script containing a function that declares an argument parser object that adds the names and types for the input and output parameters. For our Diabetes Hospital Readmission use case, we will be passing the path to our training dataset and the target column name as the classifier. Then the trained model will be the output for the script.
+
 
 ```python
 def parse_args():
@@ -194,7 +228,7 @@ def parse_args():
     return args
 ```
 
-In our python code, we’ll define a main class that the takes the input arguments to train the month.  As you will see the code to change the model remain the same.  The only change is create an experiment in Azure Machine Learning studio and using MLFlow to start the artifacts and metrics from your training model for tracking.
+In our python code, we’ll define a main class that takes the input arguments to train the model. As you will see the code for training the model remains the same. The only change is creating an experiment in Azure Machine Learning studio and using MLFlow to start the artifacts and metrics from your trained model for tracking.
 
 ```python
 current_experiment = Run.get_context().experiment
@@ -203,7 +237,7 @@ mlflow.set_tracking_uri(tracking_uri)
 mlflow.set_experiment(current_experiment.name)
 ```
 
-After your model has been training.  We’ll store the Scikit-Learn model output in a local directory then with MLFlow’s save_model function for scikit-learn models to save the model output.
+After your model has finished training. We’ll store the model’s output in a local directory then use MLFlow’s save_model function used for storing scikit-learn models, to save the model’s output.
 
 ```python
     model_dir =  "./model_output"
@@ -220,11 +254,11 @@ After your model has been training.  We’ll store the Scikit-Learn model output
             shutil.copy2(src=os.path.join(tmp_output_dir, file_name), dst=os.path.join(args.model_output, file_name))
 ```
 
-Once you have defined you python code with the arguments and the main function to execute, we can create a compute to load the python to Azure Machine Learning components.
+Once you have defined the python code with the arguments and the main function to execute, we can create a component to load the python to Azure Machine Learning components.
 
-## Task 6: Create a job 
+## Task 6: Create a component
 
-To define our training component, we’ll need to create a yaml file where we specified the component name, input, and output parameters; the location of the python code that trains the model; the command-line to execute the python code; and the environment to run the code. You can use Azure Machine Learning the Responsible AI’s out of the box curated environment: *AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu*. Then use the client session to register the component definition in workspace components.
+To define our training component, we’ll need to create a yaml file where we specified the component name, input, and output parameters; the location of the python code that trains the model; the command-line to execute the python code; and the environment to run the code. You can use Azure Machine Learning’s out of the box curated environment: *AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu*, used for Responsible AI jobs. Then use the client session to register the component definition in workspace components.
 
 ```python
 from azure.ai.ml import load_component
@@ -338,7 +372,7 @@ def submit_and_wait(ml_client, pipeline_job) -> PipelineJob:
 training_job = submit_and_wait(ml_client, model_registration_pipeline_job)
 ```
 
-To monitor progess of the job and status of all the components in the pipeline job is by clicking on the Jobs icon from the Azure Machine Learning Studio.
+To monitor the progress of the job and status of all the components, click on the Jobs icon from the Azure Machine Learning Studio.
  
  ![training job](/img/training-job.png)
  
@@ -348,11 +382,17 @@ From the Jobs list, you can click on the job to view the jobs progress and can d
 
 # Exercise 3:  Add a Responsible AI dashboard
 
-In this exercise, you'll be learning how to create the Responsible AI dashboard for the trained model. This will help us get a hoslitic insights from our diabetes hospital readmission model.  In addition, it will expose any errors or areas where there could be undesireable responsible AI issues.  The dashboard is comprised of different components to enable you to debug and analyze the model performance, identify errors, performance fairness assessment, performance model interpretability and more. The dashboard can be create using the Azure Portal, CLI or SDK. In this exercise, we will be using the SDK to create the dashboard.
+In this exercise, you’ll be learning how to create the Responsible AI dashboard for the trained model. This will help us get a holistic insight from our diabetes hospital readmission model. In addition, it will expose any errors or areas where there could be undesirable responsible AI issues. The dashboard is comprised of different components to enable you to debug and analyze the model performance, identify errors, conduct fairness assessment, evaluate performance model interpretability and more. The dashboard can be created using the Azure Portal, CLI or SDK. In this exercise, we will be using the SDK to create a dashboard.
+
+## Prerequisites
+1. Open the Azure Machine Learning studio at https://ml.azure.com
+2. Click on *Notebooks* on the left navigation menu.
+3. Under your username, click on *Upload folder* option and upload the *BUILD-AzureML-workshop* directory that your clone in the last exercise. (**ONLY**:  If you have not already uploaded the directory)
+4. Then open the *3-create-responsibleai-dashboard.ipynb* notebook.
 
 ## Task 1: Define the dashboard components
 
-The Responsible AI dashboard components are already pre-defined in the Azure Machine Learning studio.  To use the components, you need submit the component name and version to the Azure Machine Learn clients session created in the previous exercise. The user have the option to add a many components they want on the Responsible AI dashboard. The components you'll be are:
+The Responsible AI dashboard components are already pre-defined in the Azure Machine Learning studio. To use the components, you need to submit the component name and version to the Azure Machine Learning client’s session created in the previous exercise. The user has the option to add as many components they want on the Responsible AI dashboard. The components you’ll be using are:
 
 * Error Analysis
 * Explanation
@@ -413,7 +453,7 @@ The RAI constructor component is what initializes the global data needed for the
         create_rai_job.set_limits(timeout=120)
 ``` 
 
-The Explanation component is responsible for the dashboard providing a better understanding of what features influence the model’s predictions. It takes the a comment description pertaining to your use case. Then set the *rai_insights_dashboard* to be the output insights generated from the RAI pipeline job for Explanations.
+The Explanation component is responsible for the dashboard providing a better understanding of what features influence the model’s predictions. It takes a comment that is a description pertaining to your use case. Then sets the *rai_insights_dashboard* to be the output insights generated from the RAI pipeline job for Explanations.
 
 ``` python
         # Explanation
@@ -449,7 +489,7 @@ The pipeline job outputs are the dashboard and UX config to be displayed.
 
 ## Task 2: Run job to create the dashboard
 
-After the pipeline is defined, we'll initialize it by specifying the input parameters and the path to the it's outputs. Lastly, we use the submit_and_wait function to run the pipeline and register it to the Azure ML workspace.
+After the pipeline is defined, we'll initialize it by specifying the input parameters and the path to the outputs. Lastly, we use the submit_and_wait function to run the pipeline and register it to the Azure Machine Learning studio.
 
 ``` python
 # Pipeline Inputs
@@ -482,7 +522,7 @@ To monitor the progress of the pipeline job, click on the Jobs icon from the [Az
 
 To visualize the individual progression of each of the components in the pipeline, click on the pipeline name. This gives you a better view of which components are completed, pending, or failed.
 
-![Azure ML jobs progress](/img/rai-dashboard-pipeline.png)
+![Azure ML jobs progress](/img/rai_dashboard_pipeline.png)
 
 After the RAI dashboard pipeline job has successfully completed, click on the “Models” tab of the Azure ML studio to find your registered model. Then, select the name of the model you trained from the previous exercise.
 
@@ -492,19 +532,187 @@ From the Model details page, click on the “Responsible AI” tab. Then select 
 
 ![Azure ML Model details](/img/model-details.png)
 
-Terrific…you now have an RAI dashboard.
+Terrific…you now have an Responsible AI dashboard.
 
 ![Azure ML dasboard gif](/img/rai-dashboard.gif)
 
-# Exercise 4:  Debug your model with Responsible AI dashboard
+# Exercise 4:  Debugging your model with Responsible AI (RAI) dashboard
 
-In this exercise, you will use the RAI dashboard to debug the diabetes hospital readmission classification model. Traditional machine learning performance metrics provide aggregated calculations which are insufficient to understand model errors distribution or if the model is behaving responsibly. The RAI dashboard provides a way to analysis where there are disparities in the model’s predictions, and understand the features that influence the model’s predictions. This exercise will explore area where there could be fairness, inclusiveness or reliability & safety issues.
+In this exercise, you will use the RAI dashboard to debug the diabetes hospital readmission classification model. Traditional machine learning performance metrics provide aggregated calculations which are insufficient to understand model errors distribution or if the model is behaving responsibly. The RAI dashboard provides a way to analysis where there are disparities in the model’s predictions and understand the features that influence the model’s predictions.  It enables the assessment of disproportional representation for sensitive features such as race, gender, political views, or religion. This exercise will explore areas where there could be fairness, inclusiveness, or reliability & safety issues.
 
 ## Task 1: Error Analysis
 
-While the overall performance metrics such as classification accuracy, precision, recall or MAE scores are good proxies to help you build trust with your model, they are insufficient in locating where in data the model has inaccuracies.  Machine Learning model often have errors that are not distributed uniformly in your underlying dataset.  Although the overall model may have a high accuracy, there may be a subset of data that the model is not performing well on.  This subset of data may be a crucial demographic you do not want the model to make error on.   This this exercise, you will use the Error Analysis component of the RAI dashboard to identify where the model has a high error rate.
+While the overall performance metrics such as classification accuracy, precision, recall or MAE scores are good proxies to help you build trust with your model, they are insufficient in locating where in the data there are model inaccuracies. Machine Learning model often has errors that are not distributed uniformly in your underlying dataset. Although the overall model may have high accuracy, there may be a subset of data that the model is not performing well on. This subset of data may be a crucial demographic you do not want the model to be erroneous. This exercise, you will use the Error Analysis component of the RAI dashboard to identify where the model has a high error rate.
 
+The Tree Map from the Error Analysis provides visual indicators to help in locating the problem areas quicker. For instance, the darker shade of red color a tree node has, the higher the error rate
+ 
+
+![Tree Map](/img/1-ea-treemap.png)
+
+In the above diagram, the first things we observe from the root node is that out of the 697 total test records, the component found 98 incorrect predictions while evaluating the model.  To investigate what's causing the high error rate with this group of patients, we will create a cohort for these groups of patients.
+
+1. Find the leaf node with the darkest shade of red color.  Then, double-click on the leaf node to select all nodes in the path leading up to the node. This will highlight the path and display the feature condition for each node in the path.
+
+![Tree map High error rate](2-ea-tree-highest-error.png)
+
+2. Click on the **Save as a new cohort** button on the upper right-hand side of the error analysis component. Note:  The dashboard displays the “Filters” with the feature conditions of the nodes in the path selection
+
+3. Enter a name for the cohort: For example: ***Err: Prior_inpatient > 1 && < 4; Num_lab_procedure > 46***.  **Tip** The "Err:" prefix helps indicate that this cohort has the highest error rate. 
+
+![Tree map High error rate](/img/3-ea-save-higherror-cohort.png)
+
+4. Click on the **Save** button to save the cohort.
+
+As much as it’s advantageous in finding out why the model is performing poorly, it is equally important to figure out what’s causing our model to perform well for some data cohorts.  So, we’ll need to find the tree path with the least number of errors to gain insights as to why the model is performing better in this cohort vs others. 
+
+1. Find the leaf node with the lightest shade of gray color and the lowest error rate when you hover the mouse over the node.  Then, double-click on the leaf node to select all nodes in the path leading up to the node. This will highlight the path and display the feature condition for each node in the path.
+
+![Tree map Low error rate](4-ea-tree-lowest-error.png)
+
+2. Click on the **Save as a new cohort** button on the upper right-hand side of the error analysis component. Note:  The dashboard displays the “Filters” with the feature conditions of the nodes in the path selection
+
+3. Enter a name for the cohort: For example: ***Prior_inpatient = 0 && < 3; Num_lab_procedure < 27***.  
+
+![Tree map High error rate](/img/5-ea-save-lowerror-cohort.png)
+
+4. Click on the **Save** button to save the cohort.
+
+This is adequate for you start investigating model inaccuracies, comparing the different features between top and bottom performing cohorts will be useful for improving our overall model quality.  
+
+In the next exercise, you will use the Model Overview component of the RAI dashboard to start our analysis.
 
 ## Task 2: Model Overview
+
+Evaluating the performance of a machine learning model requires getting a holistic understanding of its behavior. This can be achieved by reviewing more than one metric such as error rate, accuracy, recall, precision or MAE to find disparities among performance metrics.  In this exercise, we will explore how to use the Model Overview component of the Responsible AI (RAI) dashboard to find model performance disparities across cohorts. 
+
+To start evaluating the performance of the model, you show be able to see the cohort you created in the previous exercise.  The "All data" is created by default by the dashboard.
+
+![Model Overview](/img/1-mo-model-overview.png)
+
+1. We can see that the "All data" has good overall accuracy score of 0.859 with sample size of 697 results in the test dataset.  
+- However, the accuracy score for the "Err: Prior_inpatient > 1 && < 4; Num_lab_procedure > 46" cohort is 0.455.  This is a very poor accuracy score.  This confirms that the model is not performing well for diabetic patients this cohort that have prior hopitalization (prior_inpatient) between 1 and 4 times, as well as over 45 number of lab procedures (num_lab_procedures).  
+- The cohort with the lowest error rate has an accuracy score of 0.962.  This is a very great overall accuracy score.  This confirms that the model is performing well for diabetic patients in this cohort that have prior hopitalization (prior_inpatient) less than 3 times, as well as less than 27 number of lab procedures(num_lab_procedures)
+- The rate of False Positive rates are close to 0 for all cohorts; meaning there's a low number of cases where the model is inaccurately predicting patients that are going to be readmitted back to the hospital in 30 days. - Contrarily, the False Negative rate are close to 1, which is high. This indicates that there's a high number of cases where the model is falsely predicting that patients will not be readmitted, however the actual outcome is they will be readmitted in 30 days back to the hospital. 
+
+This means the model is correctly predicting that patients will not be readmitted back to the hospital in 30 days a majority of the time.  However, the model is less confident in correctly predicting patients who will be readmitted within 30 days back to the hospital.
+
+Probability Distribution
+
+Similar to the performance metrics, we have the ability to view the “Probability Distribution.” 
+
+1. Under the **Probability Distribution**, you can see that the cohort with the lower error rate has a higher probability at 0.972 of patients being readmitted in 30 days.  The cohort with the higher error rate has a lower probability at 0.844 of patients not being readmitted in 30 days. 
+
+![Probability Distribution](/img/1-mo-dataset-prob.png)
+
 ## Task 3: Data Analysis
+
+Data can be overrepresented in some cases and underrepresented in others. This may lead to data biases, causing the model to have fairness, inclusiveness, safety, and/or reliability issues.  In this exercise, we will explore how to use the Data Analysis component of the Azure Responsible AI (RAI) dashboard to discover the root-cause of the model’s poor performance. 
+
+The Table view pane under Data Analysis helps visualize all the features and individual results of the data in a selected cohort.  For our analysis, we will use the Chart view pane to visualize the data.  First, we’ll use the chart to compare the data distribution of the number of patients not readmitted vs. readmitted in our test dataset using True Y and Predicted Y.  Then, we’ll examine if there are disparities for sensitive features or patients with prior hospitalization.
+
+*Data imbalance issues with test dataset*
+
+1. Select the “All data” option from the **“Select a dataset cohort to explore”** drop-down menu.
+2. On the y-axis, we’ll click on the current selected “race” value, which will launch a pop-up menu.
+3. Under “Select your axis value,” we’ll choose “Count.”
+
+![Chart view](/img/1-da-chart-view.png)
+
+4. On the x-axis, we’ll click on the current selected “Index” value, then choose “True Y” under the **“Select your axis value”** menu.
+
+![predicted Y count](/img/2-da-count-truey.png)
+
+5. We can see that, out of the 994 diabetes patients represented in our test data, 587 patients are not readmitted and 110 are readmitted back to a hospital within 30 days. These are the actual values or “TrueY.”
+
+![predicted Y count](/img/3-da-count-predictedy.png)
+
+For contrast, let’s compare those values with what our model actually predicts. To do that, let’s change the “True Y” value on the x-axis by selecting the “Predicted Y”.  Now, we see that the model’s number of patients readmitted back to the hospital is 24, while the number of patients not readmitted is 673. So, this exposes an extreme data imbalance issue where the model does not perform well for cases where patients are readmitted.
+
+*Sensitive data representation*
+
+1. Click on the x-axis label.
+2. In the pop-up window pane, select the “Dataset” radio button.
+3. Then under “select feature”, select “race” on the drop-down menu.
+4. On the x-axis keep the “count” selected.
+
+Now we'll compare race distribution, we find if there’s disparities in representation. Caucasians represent 73% of patients in the test data. African-Americans make up 21% of the patients. Hispanics represent 3% of the data. There’s obviously data gaps between the different ethnicities, which can lead to fairness issues. This is an area where ML professionals can intervene and help mitigate data disparities to make sure the model does not provide any racial biases.  If this model is to be use in a hospital when there is a predominately minority population, then the model will not be reliable in making accurate predictions for minority patients.
+
+![race count](/img/6-da-age-count.png)
+
+The gender representation among the patients are fairly balanced. So, this is not an area of concern.
+
+![gender count](/img/5-da-gender-count.png)
+
+Age is not proportionately distributed across our data, as seen in our three age groups. Diabetes tends to be more common among older age groups, so this may be an acceptable and expected disparity. However, this is another area for ML professionals to validate with medical specialists to understand if this is a normal representation of individuals with diabetes across age groups.
+
+![age count](/img/6-da-age-count.png)
+
+
+*Hospital readmission disparities*
+
+1. Click on the y-axis label. Then, in the pop-up window pane, select the “Dataset” radio button.
+3. Under “select feature”, select “race” on the drop-down menu.
+4. Click on the x-axis label. Under the **“Select your axis value”** choose “Predicted Y” option.
+
+![race readmission](/img/6-da-race-readmission.png)
+
+For race, the chart shows that, due to the data imbalance, the model will not be able to accurately predict if a patient will be readmitted back to the hospital for some ethnicities. As we saw above, the Caucasian patients are overrepresented in this data set. 
+
+![race readmission](/img/7-da-age-readmission.png)
+
+There’s an overrepresentation of data for patients “over 60 years” and data underrepresentation for patients “30 years or younger.” Here, the effects of data imbalance were evident between the model’s classification of “Not readmitted” vs. “Readmitted.”
+
+As you can see from all the data analysis we performed, data is a significant blind spot that is often missed when evaluating model performance. After tuning a model, you can increase accuracy scores, but that does not mean you have a model that is fair and inclusive.
+
 ## Task 4: Feature Importance
+
+Examining a model is not just about understanding how accurately it can make a prediction, but also why it made the prediction. In some case a model has adverse behavior or makes a mistake that can be harmful to individuals or society. The ability to explain a model’s outcome provides shared understanding for data scientists, decision-makers, end-users, and auditors. In Some industries have compliance regulations that require organizations to provide an explanation for how and why a model made the prediction it did. In this exercise, we will use the Feature Importance component of the Azure Responsible AI (RAI) dashboard to understand what features have most influence on a model’s prediction.
+
+*Global explanation*
+
+The Feature Importance component of the RAI dashboard enables users to get a comprehensive understanding of why and how a model made a prediction. It displays the top data features that drove a model’s overall predictions in the Feature Important section of the dashboard. This is also known as the global explanation.
+
+![global explanation](/img/1-fi-global-explanation.png)
+
+Users can toggle the slider back-and-forth on top of the chart to display all the features, which are ordered in descending order of importance on the x-axis. The y-axis shows how much weight a feature has in driving a model’s prediction in comparison to the rest of the other features. The color of bar(s) on the chart corresponds to the cohorts created on the dashboard. In the diagram, it looks like *prior_inpatient*, *discharge_destination*, *diabetes_Med_prescribe*, *race*, and *prior_emergency* are the top 5 features driving our diabetic hospital readmission classification model predictions.
+
+Having a sensitive feature such as *race* that is one of the top 5 features driving our model’s predictions is a red flag for potential fairness issues. This is an area where ML professionals can intervene to make sure the model does not making any racial biases leading to racial bias issues
+
+*Feature Influence on a Model Prediction*
+
+Let's explore how a feature's values positively or negatively influence a model’s outcome.
+
+1. Select the *“Class: Not Readmitted”* option under the **Class importance weights** drop-down menu on the right-hand side of the dashboard.
+2. The dashboard gives you the ability to double-click on any bar or box on the chart to get details. In our case, we’ll double-click on the *“number_diagnoses”* bar from the “All data” cohort (in blue color).
+3. This generates another chart below the Aggregate feature importance chart.
+4. The x-axis displays the number of diagnoses that were entered into the system for the diabetic patient.
+5. The y-axis displays the level of contribution to the model making a prediction of Not Readmitted.
+  * Numbers above 0 show the level of positive contribution to the model’s prediction of a patient Not Readmitted
+  * Numbers below 0 show the level of negative contribution against the model’s prediction from Not Readmitted to Readmitted.
+
+![Feature influence ](/img/2-fi-feature-influence.png)
+
+As you can see from the graph, as we progress from 1 to 9 in “number_diagnoses” the model’s confidence decreases in a patient’s outcome to be not readmitted within 30 days back to the hospital. When the number of diagnoses is 7 or greater, the datapoints fall below the 0 axis.  Meaning the feature start to negatively impact the model to make a prediction of “Not Readmitted” and the model starts to predict a “Readmitted” classification. This makes intuitive sense because a diabetic patient with additional medical conditions is more likely to get sick and return to the hospital again.
+
+This is the level of detail you can use the Feature Importance component of the RAI dashboard to understand why a model made a prediction and make informed decisions on how to improve the model.
+
+*Local Explanation*
+
+The component has a table view that enables users to see which records the model made a correct vs. incorrect prediction. You can use each individual patient’s record to see which features positively or negatively drove that individual outcome. This is especially useful when debugging to see where the model is performing erroneously for a specific patient, and which features are positive or negative contributors.
+
+To explore, we’re going to:
+
+1. Click on the "Individual Feature Importance" tab.
+
+![Individual Feature influence](/img/3-fi-individual-influence.png)
+
+2. Next, under the "Incorrect predictions" we’ll select record index #679. 
+
+This will generate a Feature Important plot chart under the Table view. Here we see that “age”, “diabetes_Med_prescribe” and “insulin” are the top 3 features contributing to positively drive our model incorrectly predicting that the selected patient will not be readmitted within 30 days (the outcome should be Readmitted).
+
+This exercise shows how Feature Importance removes the black box way of not knowing how the model went about making a prediction. It provides a global understanding of what key features the model uses to make a prediction. In addition, for each feature, the user has the ability to explore and visualize how it is positively or negatively influencing the model’s prediction for one class vs. another for each value in the feature. This also exposes the thresholds the model has to produce a certain outcome. We saw this in the “Number_Diagnoses” feature. 
+
+
+# Conclusion
+
+The RAI dashboard components provide practical tools to help data scientists and AI developere build machine learning models that are less harmful and more trustworthy to society. To improve the prevention of treats to human rights; discriminating or excluding certain group to life opportunities; and the risk of physical or psychological injury. It also helps to build trust in your model’s decisions by generating local explanations to illustrate their outcomes. Traditional model evaluation metrics are not enough to reveal responsible AI issues such as fairness, inclusiveness, reliability & safety or transparency. You need practical tools like the RAI dashboard to help you understand the impact of your model will on society and how to improve it.
