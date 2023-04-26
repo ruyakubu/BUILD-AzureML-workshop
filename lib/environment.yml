@@ -1,0 +1,9 @@
+name: build-2023
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.9.12
+  - pip
+  - pip:
+    - -rrequirements.txt
