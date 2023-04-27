@@ -25,12 +25,12 @@ For this exercise, you’ll need to load the **1-dataprep-and-training-local.ipy
 Let's first read the hospital diabetes data into a DataFrame, using the "read_csv" function from the “pandas” library.
 
 ```python
-df = pd.read_csv('diabetic_data.csv')
+df = pd.read_csv('data/diabetic_data.csv')
 ```
 
 *Understanding the dataset*
 
-Then we'll check the size of the data to verify that it will be sufficient for our training. 
+Next we'll check the size of the data to verify that it will be sufficient for our training. 
 
 ```python
 df.shape
@@ -44,7 +44,7 @@ Let’s display the DataFrame to see what kind of features are in the diabetes p
 df.head()
 ```
 
-As you can see it contains the patient’s race, gender, age, weight, their prior hospital visits, lab results, and so on - these will be our model's inputs. It also contains information on whether or not they were readmitted back to the hospital - this will be our model's output. 
+As you can see it contains the patient’s race, gender, age, weight, their prior hospital visits, lab results, and so on - these will be our model's inputs.  It also contains information on whether or not they were readmitted back to the hospital - this will be our model's output. 
 
 *Checking for special characters*
 
@@ -119,7 +119,7 @@ train.to_parquet('data/training_data.parquet')
 test.to_parquet('data/testing_data.parquet')
 ```
 
-Next, we'll train the data.  We'll split the train and test data into features X (our inputs), and targets Y (our labels). 
+Next we'll split the train and test data into features X (our inputs), and targets Y (our labels). 
 
 ```python
 # Split train and test data into features X and targets Y.
@@ -130,7 +130,7 @@ Y_test = test[target_column_name]
 X_test = test.drop([target_column_name], axis = 1)  
 ```
 
-Then we'll transform string data to numeric values using scikit-learn’s *OneHotEncoder*, and we'll standardize numeric data using scikit-learn’s *StandardScalar*.  Next we'll create a pipeline with these two processing steps, and the LogisticRegression classification model.  And finally, we'll train the model using the *fit* function, and we'll score it.
+Then we'll transform string data to numeric values using scikit-learn’s *OneHotEncoder*, and we'll standardize numeric data using scikit-learn’s *StandardScalar*.  After that, we'll create a pipeline with these two processing steps, and the LogisticRegression classification model.  And finally, we'll train the model using the *fit* function, and we'll score it.
 
 ```python
 # Transform string data to numeric one-hot vectors
