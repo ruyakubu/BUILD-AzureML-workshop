@@ -1,5 +1,5 @@
 
-In this lab, you’ll be learning the end-to-end machine learning process that involves data preparation, training a model, registering the model and debugging it to perform responsibly.  First you will go through the process of training the model locally.   Then you will learn how to make your machine learning model training process more dynamic, manageable, and scalable in the cloud using the Azure Machine Learning service. For the workshop we’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.  
+In this lab, you’ll be learning the end-to-end machine learning process that involves data preparation, training a model locally and in the cloud, and debugging it to perform responsibly.  We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
 # Prerequisites
 1. Clone the lab repository into your local machine.
@@ -16,50 +16,60 @@ cd BUILD-AzureML-workshop
 
 # Exercise 1:  Training a model locally
 
-To prepare the data to be used for training our model we are going to review our dataset to cleanse any redundant data, missing values, reformat data or delete any irrelevant data that will be used for our use case. After the data has been cleansed, we’ll train the model. 
+We'll start by cleaning our dataset: we'll check for special characters, remove missing values, delete irrelevant columns, and reformat our data. After the data has been cleansed, we’ll train the model. 
 
-## Task #1: Data Preparation
+## Task 1: Data Preparation
 
 For this exercise, you’ll need to load the **1-dataprep-and-training-local.ipynb** jupyter notebook.
 
-The first thing we need is to read the hospital diabetes data into a dataframe that will allow us to visualize and perform data manipulation.  To do this will be using the read_csv function from the “pandas” library.  
+Let's first read the hospital diabetes data into a DataFrame, using the "read_csv" function from the “pandas” library.
 
 ```python
-df = pd.read_csv('diabetic_data.csv')
+df = pd.read_csv('data/diabetic_data.csv')
 ```
 
 *Understanding the dataset*
 
-We'll check the size of the data to verify that it will be sufficient for our training. As you can see 101,766 is a very large dataset, which is good.
+Next we'll check the size of the data to verify that it will be sufficient for our training. 
 
-Let’s display the dataframe to see what kind of features are in the diabetes patients’ hospital data. As you can see it contains the patient’s race, gender, age, weight, their prior hospital visits, lab results, prescribed medications they are taking and whether or not they were readmitted back to the hospital. 
+```python
+df.shape
+```
+
+101,766 is a very large dataset, which is good.
+
+Let’s display the DataFrame to see what kind of features are in the diabetes patients’ hospital data. 
+
+```python
+df.head()
+```
+
+As you can see it contains the patient’s race, gender, age, weight, their prior hospital visits, lab results, and so on - these will be our model's inputs.  It also contains information on whether or not they were readmitted back to the hospital - this will be our model's output. 
 
 *Checking for special characters*
 
-One of the invalid data you can observe from the results is from the *weight* column.  It has a “?” special character as its possible values.  We’ll loop through all the results to identify other columns that many have this special character.
-
-```python
-print(df.loc[: , (df == '?').any()])
-```
-
-The output shows that that race, weight, payer_code, medical_specialty, diag_1, diag_2, and diag_3 are the columns that also have this special character.  To fix this we’ll change the character to null by using the numpy NAN function.
+If you look at the *weight* column in the portion of the DataFrame you printed, you'll notice that some of its values contain "?". Let's change that character to null.
 
 ```python
 df = df.replace('?', np.NaN) 
+df.head() 
 ```
 
-*Checking for null values*
+*Removing null values*
+
+Running the *count* function on the dataframe tells us how many values in each column are not null. 
 
 ```python
-print(df.isna().any())
+df.count()
 ```
 
-When we run the *“isna”* function on the dataframe, we can see that there are 7 columns with null values in our dataset. Depending on the number of null values that a column has, we’ll keep or delete the column. 
+As you can see, we have null values in most columns, and *weight* in particular has a lot of null values. Even thought the patient's weight is likely to impact the readmission status, we've decided to drop it because it contains such little information.
 
-* As we count the number of columns with null values, weight is the column with the highest null count. Although *weight* is likely to impact a diabetes patient’s readmission status, 97% of its values are null. So, this column is useless since a majority of the patients’s weight will be missing.  
-* *Race* is another column that has 12% of its values missing. This is not a signification number;  hence we can drop just the null values. 
-* The null values from *payer_code* and *medical_specialty* are not noteable either, so can drop the null values.
+```python
+df = df.drop(['weight'], axis=1)
+```
 
+We'll also drop all rows that contain some null values:
 
 ```python
 df = df.dropna()
@@ -67,33 +77,17 @@ df = df.dropna()
 
 *Deleting irrelevant columns*
 
-A patient’s form of payment does not have impact on their return to the hospital, so we’ll drop the *payer_code*. However, we added *medicare* and *medicaid* as new columns to indicate whether or not the hospital bill was paid using a subsidize government medical assistance for low-income individuals. This can help us understand if there are any socioeconomic gaps in the diabetes patient demographic.
+There are 20+ columns that are not relevant to whether the patient is readmitted to the hospital, so we'll drop those.
 
 ```python
-df.loc[:, "medicare"] = (df.payer_code == "MC")
-df.loc[:, "medicaid"] = (df.payer_code == "MD")
+df.drop(['encounter_id', 'patient_nbr', 'payer_code', 'medical_specialty', 'admission_type_id', 'repaglinide','nateglinide','chlorpropamide','glimepiride','acetohexamide','glipizide','glyburide','tolbutamide','pioglitazone','rosiglitazone','acarbose','miglitol','troglitazone','tolazamide','examide','citoglipton', 'metformin','glyburide-metformin','glipizide-metformin' 'glimepiride-pioglitazone','metformin-rosiglitazone','metformin-pioglitazone', 'diag_2', 'diag_3', 'change'], axis=1, inplace=True)
 ```
-
-There are 20+ columns that are indicators of whether or not a patient took a certain diabetic medication (rosiglitazon, citoglipton, metformin etc.) that have no correlation on a patient’s return to the hospital. As result, we’ll delete these medications.
-
-```python
-df.drop(['encounter_id', 'patient_nbr', 'weight', 'payer_code', 'medical_specialty', 'admission_type_id', 
-         'repaglinide','nateglinide','chlorpropamide','glimepiride','acetohexamide','glipizide','glyburide','tolbutamide',
-        'pioglitazone','rosiglitazone','acarbose','miglitol','troglitazone','tolazamide','examide','citoglipton', 'metformin',
-        'glyburide-metformin','glipizide-metformin','glimepiride-pioglitazone','metformin-rosiglitazone','metformin-pioglitazone', 'diag_2', 'diag_3', 'change'], axis=1, inplace=True)
-```
-
-Lastly, unique patient numbers or hospital record identifications do not add value to the model. Also, a patient’s first, second or third diagnosis while that were hospitalized may be useful, but are too random from patient to patient.
 
 *Formatting data*
 
-* Part of working with data is formatting the columns or values into names that are more meaningful and easier to understand. For example, we’ll change the readmitted values of NO or <30 to “not readmitted" and “readmitted” respectively.
+To make it easier to work with this data later in this workshop, we'll rename some columns to make their names more readable, and we'll consolidate some categories.
 
-```python
-df['readmitted'] = df['readmitted'].replace({"NO":"not readmitted", "<30":"readmitted"})
-```
-
-* Next, the age group are represented in brackets. For example, [0 - 10] denotes the age between 0 and 10 years old. In addition, since there’s a small sample size of patients in this age group will consolidate the age groups into easier to understand groups.
+For example, in the code snippet below, we replace the age groups with better descriptions. And because some age groups have very few patients, we'll also combine them into larger age groups:
 
 ```python
 df.loc[:, "age"] = df["age"].replace( ["[0-10)", "[10-20)", "[20-30)"], "30 years or younger")
@@ -101,19 +95,68 @@ df.loc[:, "age"] = df["age"].replace(["[30-40)", "[40-50)", "[50-60)"], "30-60 y
 df.loc[:, "age"] = df["age"].replace(["[60-70)", "[70-80)", "[80-90)", "[90-100)"], "Over 60 years")
 ```
 
-* Sometimes there are different codes that fall under one category.  Unless the individual codes play a role in your use case, it’s better to aggregate the codes into a category.  For the *primary_diagnosis*, *discharge_destination* and *admission_source* column we will combine the value into their respective medical categories.
+We'll do similar renaming and aggregating operations for other columns. It's not critical to understand the code in this section in order to understand the rest of the workshop, so let's move on to training the dataset.
 
-## Task # 2:  Training data
 
-Now that the data has been cleansed, it is ready to be used to train our diabetes hospital readmission classification model. We’ll need to split the training and testing datasets with scikit-learn’s *train_test_spilt* function. Then, we'll format dataset to a parquet file.  The data files will be store on the local machine to used later.
+## Task 2:  Training data
 
-Next, to normalize our data, we’ll create a helper function that identifies all the indices for the non-numeric columns. Scikit-Learn’s *OneHotEncoder* will be used to encode all the string or object columns. The *StandardScalar* will be used to encode the number column fields. Then, the *ColumnTransformer* will perform the data transformations. We'll create a pipeline to put all these preprocessing tasks before training the model.
+Now that the data has been cleansed, we can use it to train our diabetes hospital readmission classification model. We'll start by reducing the number of rows in the DataFrame to make training a bit faster for the workshop.
 
-For our diabetes readmission classification, we’ll use the LogisticRegression model on our dataset.
+```python
+df = df.sample(frac=0.20)
+```
 
-After training the model, we can review the accuracy score to evaluate how well our trained model performed. 
+Then we'll split the training and testing datasets with scikit-learn’s *train_test_spilt* function. 
 
-Well done...the score of 0.85 looks good.
+```python
+train, test = train_test_split(df, train_size=0.80, random_state=1)
+```
+
+Next we'll format both datasets to a parquet file.  The data files will be store on the local machine to be used later.
+
+```python
+train.to_parquet('data/training_data.parquet')
+test.to_parquet('data/testing_data.parquet')
+```
+
+Next we'll split the train and test data into features X (our inputs), and targets Y (our labels). 
+
+```python
+# Split train and test data into features X and targets Y.
+target_column_name = 'readmit_status'
+Y_train = train[target_column_name]
+X_train = train.drop([target_column_name], axis = 1)  
+Y_test = test[target_column_name]
+X_test = test.drop([target_column_name], axis = 1)  
+```
+
+Then we'll transform string data to numeric values using scikit-learn’s *OneHotEncoder*, and we'll standardize numeric data using scikit-learn’s *StandardScalar*.  After that, we'll create a pipeline with these two processing steps, and the LogisticRegression classification model.  And finally, we'll train the model using the *fit* function, and we'll score it.
+
+```python
+# Transform string data to numeric one-hot vectors
+categorical_selector = selector(dtype_exclude=np.number)
+categorical_columns = categorical_selector(X_train)
+categorial_encoder = OneHotEncoder(handle_unknown="ignore")
+
+# Standardize numeric data by removing the mean and scaling to unit variance
+numerical_selector = selector(dtype_include=np.number)
+numerical_columns = numerical_selector(X_train)
+numerical_encoder = StandardScaler()
+
+# Create a preprocessor that will preprocess both numeric and categorical data
+preprocessor = ColumnTransformer([
+('categorical-encoder', categorial_encoder, categorical_columns),
+('standard_scaler', numerical_encoder, numerical_columns)])
+
+clf = make_pipeline(preprocessor, LogisticRegression())
+
+print("Training model...") 
+model = clf.fit(X_train, Y_train)
+print("Accuracy score: ", clf.score(X_test,Y_test))
+```
+
+Well done...a score of around 0.85 looks good!
+
 
 # Exercise 2:  Training a model in the cloud
 
