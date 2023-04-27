@@ -85,7 +85,7 @@ df.drop(['encounter_id', 'patient_nbr', 'payer_code', 'medical_specialty', 'admi
 
 *Formatting data*
 
-To make it easier to work with this data later in this workshop, we'll rename some columns to be more readable, and we'll consolidate some categories.
+To make it easier to work with this data later in this workshop, we'll rename some columns to make their names more readable, and we'll consolidate some categories.
 
 For example, in the code snippet below, we replace the age groups with better descriptions. And because some age groups have very few patients, we'll also combine them into larger age groups:
 
@@ -155,7 +155,7 @@ model = clf.fit(X_train, Y_train)
 print("Accuracy score: ", clf.score(X_test,Y_test))
 ```
 
-Well done...the score of 0.85 looks good!
+Well done...a score of around 0.85 looks good!
 
 
 # Exercise 2:  Training a model in the cloud
