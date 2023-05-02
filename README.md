@@ -1,20 +1,21 @@
 
 In this lab, you’ll be learning the end-to-end machine learning process that involves data preparation, training a model locally and in the cloud, and debugging it to perform responsibly.  We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
-# Prerequisites
+# Exercise 1:  Training a model locally
+
+## Prerequisites
 1. Clone the lab repository into your local machine.
 ```bash
 git clone https://github.com/ruyakubu/BUILD-AzureML-workshop.git
 ```
-2. Change directory into the lab folder
+2. Change directory into the lab folder.
 ```bash
 cd BUILD-AzureML-workshop
 ```
-3. Open the lab folder in Visual Studio Code. (Or Jupyter Notebook)
+3. Open the lab folder in Visual Studio Code.
 4. Then open the *1-dataprep-and-training-local.ipynb* notebook.
 5. Click on the **Run All** button on the top of the notebook to run the notebook.
 
-# Exercise 1:  Training a model locally
 
 We'll start by cleaning our dataset: we'll check for special characters, remove missing values, delete irrelevant columns, and reformat our data. After the data has been cleansed, we’ll train the model. 
 
@@ -160,268 +161,196 @@ Well done...a score of around 0.85 looks good!
 
 # Exercise 2:  Training a model in the cloud
 
-In the previous exercise, we used the diabetes hospital readmission dataset to understand and wrangled data into a clean dataset to train a classification model to predict whether a diabetic patient would be readmitted back to a hospital within 30 days of being discharge. All of this was done on the local machine. In this session, you will learn how to train a model in the cloud using the end-to-end streamline process to make your model reproduceable, easier to manage, and scalable. 
+In the previous exercise you trained your model locally, and in this exercise you'll train it in the cloud.  Training in the cloud brings many advantages: you can easily track model versions, you can scale your training to use more compute power, and you can deploy it for others to use.
 
 ## Prerequisites
 1. Open the Azure Machine Learning studio at https://ml.azure.com
-2. Click on *Notebooks* on the left navigation menu.
-3. Under your username, click on *Upload folder* option and upload the *BUILD-AzureML-workshop* directory that your clone in the last exercise.
-4. Then open the *2-compute-training-job-cloud.ipynb* notebook.
+2. Then open the *2-compute-training-job-cloud.ipynb* notebook.
+3. Click on the **Run All** button on the top of the notebook to run the notebook.
 
-## Task# 1: Create a cloud client
+This notebook takes about 20 minutes to run, so it may not be done running by the time you finish going through the material. If that's the case, move on to the third notebook, and come back at the end to see the results.
 
-Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace.  The authorization needs the subscription id, resource group, and name of the Azure ML workspace.
+## Task 1: Create a cloud client
 
-You'll need to populate the following variables with your Azure subscription id, resource group, and Azure ML workspace name.
-
+Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace.  The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
 
 ```json
 {
-    "subscription_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "resource_group": "myResourceGroup",
-    "workspace_name": "myWorkspace"
+    "subscription_id": "...",
+    "resource_group": "...",
+    "workspace_name": "..."
 }
 ```
 
+TODO: Need to ask Skillable to create a config.json file with the authentication details.
+
+With that file in place, we can authenticate with the following code:
+
 ```python
-registry_name = "azureml"
+from azure.ai.ml import MLClient
+from azure.identity import DefaultAzureCredential
+
 credential = DefaultAzureCredential()
-ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
+ml_client = MLClient.from_config(credential=credential)
 ```
 
-## Task 2: Register the dataset
+## Task 2: Register the training data
 
-Data preparation is a long and tedious process the takes up most of the machine learning process. After you have cleansed the data into a good state, Azure Machine Learning provides datastores for you to register and store your datasets to. Your dataset is stored in one location, but it can be referenced as a pointer to the location without having to move the data. The benefit of registering your datasets is, individuals on your team can reference them; and you can track all the experiments that used it.
-We are going to use the training and testing data that you used in exercise #1 and register it to the cloud. To register the files to Azure, we need to use the connect client. In this case, we need to specify the locally directory path. The AssetTypes.URI_FILE specifies what type of data file we are using.
+Next we'll register the training data we saved ealier with Azure Machine Learning. 
 
 ```python
-import os
 from azure.ai.ml.entities import Data
 from azure.ai.ml.constants import AssetTypes
 
+DATA_NAME = 'hospital_train_parquet'
+
 training_data = Data(
-    name=training_dataset_filename,
-    path='data/train_dataset.parquet',
+    name=DATA_NAME,
+    path='data/training_data.parquet',
     type=AssetTypes.URI_FILE,
-    description="Patient train data",  
+    description='RAI hospital train data'
 )
-
 tr_data = ml_client.data.create_or_update(training_data)
-
-testing_data = Data(
-    name=testing_dataset_filename,
-    path='data/test_dataset.parquet',
-    type=AssetTypes.URI_FILE,
-    description="Patient test data",  
-)
-
-te_data = ml_client.data.create_or_update(testing_data)
 ```
 
-## Task 3: Create a Compute
+This command refers to the parquet training data we saved to disk in notebook 1, copies the data to the cloud, and registers it under the name "hospital_train_parquet." We'll use that name to refer to our data later.
 
-To run a job or machine learning computation, we need to create a compute instance. You can create one from a notebook or use an existing one. To create a compute, you need a name and the size of the instance. You can also specify how you want the instance to scale during runtime.
+You can verify the data is registered by opening the Azure ML studio at https://ml.azure.com, clicking on "Data," and finding the entry with the name we specified.
+
+## Task 3: Create a compute cluster
+
+Next we'll create a compute cluster that contains the details of the virtual machines we'll use to train our model. We'll specify a machine size, a minimum and maximum number of instances in the cluster, and the maximum number of seconds that a machine can be idle before we release for others to use.
 
 ```python
 from azure.ai.ml.entities import AmlCompute
 
-compute_name = "trainingcompute"
-
-all_compute_names = [x.name for x in ml_client.compute.list()]
-
-if compute_name in all_compute_names:
-    print(f"Found existing compute: {compute_name}")
-else:
-    my_compute = AmlCompute(
-        name=compute_name,
-        size="Standard_DS2_v2",
-        min_instances=0,
-        max_instances=4,
-        idle_time_before_scale_down=3600
-    )
-    ml_client.compute.begin_create_or_update(my_compute)
-    print("Initiated compute creation")
-```
-
-## Task 4: Create an environment
-
-An environment specifies all the dependencies that a task or job needs to run. This can include python version, docker file, python libraries, etc. You have the option of creating a custom environment from scratch that suits your needs or use one of the Azure Machine Learning curated environments available. In our case, we are using Responsible AI’s out of the box curated environment: AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu since we’ll need it in the next lab. (**NOTE**:  Select the Environments tab in Azure Machine Learn Studio to see the available environments) 
-
-## Task 5: Define the training model
-
-We’ll be using Azure Machine Learning components to divide the experiment into different tasks. Components are reusable independent units of tasks that have inputs and output in machine learning (e.g., data cleansing, training a model, registering a model, deploying a model etc.). For our experiment, we will create a component for training a model. The component will consist of a python training code with inputs and outputs.
-
-The first thing to define in our python code is the training script containing a function that declares an argument parser object that adds the names and types for the input and output parameters. For our Diabetes Hospital Readmission use case, we will be passing the path to our training dataset and the target column name as the classifier. Then the trained model will be the output for the script.
-
-
-```python
-def parse_args():
-    # setup arg parser
-    parser = argparse.ArgumentParser()
-
-    # add arguments
-    parser.add_argument("--training_data", type=str, help="Path to training data")
-    parser.add_argument("--target_column_name", type=str, help="Name of target column")
-    parser.add_argument("--model_output", type=str, help="Path of output model")
-
-    # parse args
-    args = parser.parse_args()    
-
-    # return args
-    return args
-```
-
-In our python code, we’ll define a main class that takes the input arguments to train the model. As you will see the code for training the model remains the same. The only change is creating an experiment in Azure Machine Learning studio and using MLFlow to start the artifacts and metrics from your trained model for tracking.
-
-```python
-current_experiment = Run.get_context().experiment
-tracking_uri = current_experiment.workspace.get_mlflow_tracking_uri()
-mlflow.set_tracking_uri(tracking_uri)
-mlflow.set_experiment(current_experiment.name)
-```
-
-After your model has finished training. We’ll store the model’s output in a local directory then use MLFlow’s save_model function used for storing scikit-learn models, to save the model’s output.
-
-```python
-    model_dir =  "./model_output"
-    with tempfile.TemporaryDirectory() as td:
-        print("Saving model with MLFlow to temporary directory")
-        tmp_output_dir = os.path.join(td, model_dir)
-        mlflow.sklearn.save_model(sk_model=model, path=tmp_output_dir)
-
-        print("Copying MLFlow model to output path")
-        for file_name in os.listdir(tmp_output_dir):
-            print("  Copying: ", file_name)
-            # As of Python 3.8, copytree will acquire dirs_exist_ok as
-            # an option, removing the need for listdir
-            shutil.copy2(src=os.path.join(tmp_output_dir, file_name), dst=os.path.join(args.model_output, file_name))
-```
-
-Once you have defined the python code with the arguments and the main function to execute, we can create a component to load the python to Azure Machine Learning components.
-
-## Task 6: Create a component
-
-To define our training component, we’ll need to create a yaml file where we specified the component name, input, and output parameters; the location of the python code that trains the model; the command-line to execute the python code; and the environment to run the code. You can use Azure Machine Learning’s out of the box curated environment: *AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu*, used for Responsible AI jobs. Then use the client session to register the component definition in workspace components.
-
-```python
-from azure.ai.ml import load_component
-
-yaml_contents = f"""
-$schema: http://azureml/sdk-2-0/CommandComponent.json
-name: rai_hospital_training_component
-display_name: hospital  classification training component for RAI example
-version: {rai_hospital_classifier_version_string}
-type: command
-inputs:
-  training_data:
-    type: path
-  target_column_name:
-    type: string
-outputs:
-  model_output:
-    type: path
-code: ./component/
-environment: azureml://registries/azureml/environments/AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu/versions/4
-""" + r"""
-command: >-
-  python hospital_training.py
-  --training_data ${{{{inputs.training_data}}}}
-  --target_column_name ${{{{inputs.target_column_name}}}}
-  --model_output ${{{{outputs.model_output}}}}
-"""
-
-yaml_filename = "RAIhospitalClassificationTrainingComponent.yaml"
-
-with open(yaml_filename, 'w') as f:
-    f.write(yaml_contents.format(yaml_contents))
-    
-train_component_definition = load_component(
-    source=yaml_filename
+my_compute = AmlCompute(
+    name="trainingcompute",
+    size="Standard_DS2_v2",
+    min_instances=0,
+    max_instances=4,
+    idle_time_before_scale_down=3600
 )
-
-ml_client.components.create_or_update(train_component_definition)
+ml_client.compute.begin_create_or_update(my_compute)
 ```
 
-## Task 7: Create a pipeline in the cloud
+You can verify the compute cluster was created in the Studio, by going to "Compute," and then "Compute clusters."
 
-An Azure Machine Learning pipeline packages all the components and runs them sequentially during runtime with a specified compute instance, docker images or conda environments in the job process. After the training component defined above has been created, we need to define the pipeline that is going to package all the dependencies needed to run the training experiment. To do this, you will need the following:
- 
-* The experiment name and description
-* Input object for the training dataset path
-* Input object for the testing dataset path
-* Get component name that trains the model
-* Get component name that registers the model
-* The compute instance for running the training job
-All of this information is packaged in a pipeline job to run the experiment for training and registering the model.
+## Task 4: Create the job
+
+The next step is to run the code that trains our model using our hospital data, in the cloud. We'll create a job for that purpose.
+
+We need to specify the following information to create this job:
+* Description: This will show up in the Studio later, together with all the detailed information for this job.
+* Experiment name: This is the name you'll see listed in the Studio, as soon as the job execution is under way.
+* Compute: The compute cluster you created earlier.
+* Inputs: Specifies the inputs we want to pass to our training script in the "Command" section. In our scenario, we want to pass in the training data, and the name of the target column.
+* Outputs: Specifies the output returned by the training script, which in our scenario is just the trained model.
+* Code: The directory where the training script is located.
+* Environment: An environment that specifies all the software dependencies the job needs to run. In our case, we're using a curated environment from Responsible AI, since we’ll need it in the next lab.
+* Command: The actual command used to run our training script. 
 
 ```python
-from azure.ai.ml import dsl, Input
+from azure.ai.ml import command, Input, Output
+from azure.ai.ml.entities import Model
 
-hospital_train_parquet = Input(
-    type="uri_file", path="data/train_dataset.parquet", mode="download"
+TARGET_COLUMN_NAME = 'readmit_status'
+
+# Create the job.
+job = command(
+    description='Trains hospital readmission model',
+    experiment_name='hospital_readmission',
+    compute=COMPUTE_NAME,
+    inputs=dict(training_data=Input(type='uri_file', path=f'{DATA_NAME}@latest'), 
+                target_column_name=TARGET_COLUMN_NAME),
+    outputs=dict(model_output=Output(type=AssetTypes.MLFLOW_MODEL)),
+    code='src/',
+    environment='azureml://registries/azureml/environments/AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu/versions/4',
+    command='python train.py ' + 
+            '--training_data ${{inputs.training_data}} ' +
+            '--target_column_name ${{inputs.target_column_name}} ' +
+            '--model_output ${{outputs.model_output}}'
 )
-
-hospital_test_parquet = Input(
-    type="uri_file", path="data/test_dataset.parquet", mode="download"
-)
-
-@dsl.pipeline(
-    compute=compute_name,
-    description="Register Model for RAI hospital ",
-    experiment_name=f"RAI_hospital_Model_Training_{model_name_suffix}",
-)
-def my_training_pipeline(target_column_name, training_data):
-    trained_model = train_component_definition(
-        target_column_name=target_column_name,
-        training_data=training_data
-    )
-    trained_model.set_limits(timeout=120)
-
-    _ = register_component(
-        model_input_path=trained_model.outputs.model_output,
-        model_base_name=model_base_name,
-        model_name_suffix=model_name_suffix,
-    )
-
-    return {}
-
-model_registration_pipeline_job = my_training_pipeline(target_column, hospital_train_parquet)
+job = ml_client.jobs.create_or_update(job)
+ml_client.jobs.stream(job.name)
 ```
 
-## Task 8: Run the training job
+You can take a look at the "src/train.py" file specified in the command, if you'd like. It contains the training code you're already familiar with, a bit of code to deal with the arguments, and a couple of lines of code to save the model usingn the MLFlow package. 
 
-Once you have defined and registered the pipeline to the workspace, you can submit the pipeline to run in a job. In our python code, we are checking the status of the job.
+The job will take several minutes to run. You can follow the progress in the Studio by clicking on "Jobs," and then looking for the experiment name specified in the code.
+
+
+## Task 5: Register the model
+
+When the job finishes running, it outputs a trained model. We want to register that model, so that we can invoke it later to make predictions. Here's the code we need to register the model:
 
 ```python
-from azure.ai.ml.entities import PipelineJob
-import webbrowser
+from azure.ai.ml.entities import Model
 
-def submit_and_wait(ml_client, pipeline_job) -> PipelineJob:
-    created_job = ml_client.jobs.create_or_update(pipeline_job)
-    assert created_job is not None
+MODEL_NAME = 'hospital_readmission_model'
 
-    while created_job.status not in ['Completed', 'Failed', 'Canceled', 'NotResponding']:
-        time.sleep(30)
-        created_job = ml_client.jobs.get(created_job.name)
-        print("Latest status : {0}".format(created_job.status))
-
-    # open the pipeline in web browser
-    webbrowser.open(created_job.services["Studio"].endpoint)
-    
-    #assert created_job.status == 'Completed'
-    return created_job
-
-# This is the actual submission
-training_job = submit_and_wait(ml_client, model_registration_pipeline_job)
+# Register the model.
+model_path = f"azureml://jobs/{job.name}/outputs/model_output"
+model = Model(name=MODEL_NAME,
+                path=model_path,
+                type=AssetTypes.MLFLOW_MODEL)
+registered_model = ml_client.models.create_or_update(model)
 ```
 
-To monitor the progress of the job and status of all the components, click on the Jobs icon from the Azure Machine Learning Studio.
- 
- ![training job](/img/training-job.png)
- 
-From the Jobs list, you can click on the job to view the jobs progress and can drill-down to pinpoint where an error occurred. You will see the Diabetes Hospital Readmission dataset feeding as an input into our training component and the output model feeding into the register model marked as complete. After the pipeline has successfully finished running, you will have a trained model that is registered to the Azure Machine Learning Studio.
+You can check that the model is registered by looking for the model name in the Studio, under "Models."
 
-![training job progress](/img/training-job-progress.png)
+
+## Task 6: Deploy the model
+
+Next we're going to create an endpoint that we can use to make predictions using our trained model. Endpoints can have multiple deployments, and direct a percentage of their traffic to each deployment. We're going to keep it simple in this scenario, by creating a single deployment that takes all the traffic.
+
+```python
+from azure.ai.ml.entities import ManagedOnlineDeployment, ManagedOnlineEndpoint 
+
+ENDPOINT_NAME = 'hospital-readmission-endpoint'
+DEPLOYMENT_NAME = 'blue'
+
+# Create the managed online endpoint.
+endpoint = ManagedOnlineEndpoint(
+    name=ENDPOINT_NAME,
+    auth_mode='key',
+)
+registered_endpoint = ml_client.online_endpoints.begin_create_or_update(endpoint)
+
+# Get the latest version of the registered model.
+registered_model = ml_client.models.get(name=MODEL_NAME, label='latest')
+
+# Create the managed online deployment.
+deployment = ManagedOnlineDeployment(name=DEPLOYMENT_NAME,
+                                        endpoint_name=ENDPOINT_NAME,
+                                        model=registered_model,
+                                        instance_type='Standard_DS4_v2',
+                                        instance_count=1)
+ml_client.online_deployments.begin_create_or_update(deployment)
+
+# Set deployment traffic to 100%.
+registered_endpoint.traffic = {DEPLOYMENT_NAME: 100}
+ml_client.online_endpoints.begin_create_or_update(
+    registered_endpoint)
+```
+
+This takes several minutes to run. You can verify that your endpoint was created by going to the Studio, clicking on "Endpoints", and looking for the endpoint name on tht list. 
+
+
+## Task 7: Invoke the endpoint
+
+Once the endpoint is created, you can invoke it. In this case, we're going to invoke it using the input data in the file "test_data.json." You should get a prediction of "not readmitted" for this data.
+
+```python
+TEST_DATA_PATH="test_data.json"
+
+# Invoke the endpoint.
+result = ml_client.online_endpoints.invoke(endpoint_name=ENDPOINT_NAME, request_file=TEST_DATA_PATH)
+print(result)
+```
+
+Well done! You trained a model in the cloud, and you created an endpoint that you (or anyone!) can use to make predictions! :)
+
 
 # Exercise 3:  Add a Responsible AI dashboard
 
