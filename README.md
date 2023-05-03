@@ -194,28 +194,37 @@ credential = DefaultAzureCredential()
 ml_client = MLClient.from_config(credential=credential)
 ```
 
-## Task 2: Register the training data
+## Task 2: Register the training and test data
 
-Next we'll register the training data we saved ealier with Azure Machine Learning. 
+Next we'll register the training and test data we saved ealier with Azure Machine Learning. 
 
 ```python
 from azure.ai.ml.entities import Data
 from azure.ai.ml.constants import AssetTypes
 
-DATA_NAME = 'hospital_train_parquet'
+TRAIN_DATA_NAME = 'hospital_train_parquet'
+TEST_DATA_NAME = 'hospital_test_parquet'
 
 training_data = Data(
-    name=DATA_NAME,
+    name=TRAIN_DATA_NAME,
     path='data/training_data.parquet',
     type=AssetTypes.URI_FILE,
     description='RAI hospital train data'
 )
 tr_data = ml_client.data.create_or_update(training_data)
+
+test_data = Data(
+    name=TEST_DATA_NAME,
+    path='data/testing_data.parquet',
+    type=AssetTypes.URI_FILE,
+    description='RAI hospital test data'
+)
+ts_data = ml_client.data.create_or_update(test_data)
 ```
 
-This command refers to the parquet training data we saved to disk in notebook 1, copies the data to the cloud, and registers it under the name "hospital_train_parquet." We'll use that name to refer to our data later.
+These commands refer to the parquet training and test data we saved to disk in notebook 1, copy those files to the cloud, and give names to the new data resources. We'll use those names to refer to our data later.
 
-You can verify the data is registered by opening the Azure ML studio at https://ml.azure.com, clicking on "Data," and finding the entry with the name we specified.
+You can verify the data is registered by opening the Azure ML studio at https://ml.azure.com, clicking on "Data," and finding the entries with the names we specified.
 
 ## Task 3: Create a compute cluster
 
@@ -261,7 +270,7 @@ job = command(
     description='Trains hospital readmission model',
     experiment_name='hospital_readmission',
     compute=COMPUTE_NAME,
-    inputs=dict(training_data=Input(type='uri_file', path=f'{DATA_NAME}@latest'), 
+    inputs=dict(training_data=Input(type='uri_file', path=f'{TRAIN_DATA_NAME}@latest'), 
                 target_column_name=TARGET_COLUMN_NAME),
     outputs=dict(model_output=Output(type=AssetTypes.MLFLOW_MODEL)),
     code='src/',
