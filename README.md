@@ -41,7 +41,7 @@ Then we'll transform string data to numeric values using scikit-learn’s *OneHo
 # Transform string data to numeric one-hot vectors
 categorical_selector = selector(dtype_exclude=np.number)
 categorical_columns = categorical_selector(X_train)
-categorial_encoder = OneHotEncoder(handle_unknown="ignore")
+categorial_encoder = OneHotEncoder(handle_unknown='ignore')
 
 # Standardize numeric data by removing the mean and scaling to unit variance
 numerical_selector = selector(dtype_include=np.number)
@@ -55,9 +55,9 @@ preprocessor = ColumnTransformer([
 
 clf = make_pipeline(preprocessor, LogisticRegression())
 
-print("Training model...") 
+print('Training model...') 
 model = clf.fit(X_train, Y_train)
-print("Accuracy score: ", clf.score(X_test,Y_test))
+print('Accuracy score: ', clf.score(X_test,Y_test))
 ```
 
 Well done! You should have gotten an accuracy score somewhere between 0.8 and 0.85, which is a good score!
@@ -121,7 +121,7 @@ compute_name = 'trainingcompute'
 
 my_compute = AmlCompute(
     name=compute_name,
-    size="Standard_DS2_v2",
+    size='Standard_DS2_v2',
     min_instances=0,
     max_instances=4,
     idle_time_before_scale_down=3600
@@ -185,7 +185,7 @@ from azure.ai.ml.entities import Model
 model_name = 'hospital_readmission_model'
 
 # Register the model.
-model_path = f"azureml://jobs/{job.name}/outputs/model_output"
+model_path = f'azureml://jobs/{job.name}/outputs/model_output'
 model = Model(name=model_name,
                 path=model_path,
                 type=AssetTypes.MLFLOW_MODEL)
@@ -235,7 +235,7 @@ This takes several minutes to run. You can verify that your endpoint was created
 Once the endpoint is created, you can invoke it. In this case, we're going to invoke it using the input data in the file "test_data.json." You should get a prediction of "not readmitted" for this data.
 
 ```python
-test_data_path="test_data.json"
+test_data_path='test_data.json'
 
 # Invoke the endpoint.
 result = ml_client.online_endpoints.invoke(endpoint_name=endpoint_name, request_file=test_data_path)
@@ -263,25 +263,25 @@ The Responsible AI dashboard components are already pre-defined in the Azure Mac
 * Insight Gather
 
 ``` python
-label = "latest"
+label = 'latest'
 
 rai_constructor_component = ml_client_registry.components.get(
-    name="microsoft_azureml_rai_tabular_insight_constructor", label=label
+    name='microsoft_azureml_rai_tabular_insight_constructor', label=label
 )
 
 # We get latest version and use the same version for all components
 version = rai_constructor_component.version
 
 rai_explanation_component = ml_client_registry.components.get(
-    name="microsoft_azureml_rai_tabular_explanation", version=version
+    name='microsoft_azureml_rai_tabular_explanation', version=version
 )
 
 rai_erroranalysis_component = ml_client_registry.components.get(
-    name="microsoft_azureml_rai_tabular_erroranalysis", version=version
+    name='microsoft_azureml_rai_tabular_erroranalysis', version=version
 )
 
 rai_gather_component = ml_client_registry.components.get(
-    name="microsoft_azureml_rai_tabular_insight_gather", version=version
+    name='microsoft_azureml_rai_tabular_insight_gather', version=version
 )
 ```
 
@@ -305,8 +305,8 @@ The RAI constructor component is what initializes the global data needed for the
 ``` python
         # Initiate the RAIInsights
         create_rai_job = rai_constructor_component(
-            title="RAI Dashboard",
-            task_type="classification",
+            title='RAI Dashboard',
+            task_type='classification',
             model_info=expected_model_id,
             model_input=Input(type=AssetTypes.MLFLOW_MODEL, path=azureml_model_id),            
             train_dataset=training_data,
@@ -322,7 +322,7 @@ The Explanation component is responsible for the dashboard providing a better un
 ``` python
         # Explanation
         explanation_job = rai_explanation_component(
-            comment="Explain the model",
+            comment='Explain the model',
             rai_insights_dashboard=create_rai_job.outputs.rai_insights_dashboard,
         )
         explanation_job.set_limits(timeout=120)
@@ -366,14 +366,14 @@ insights_pipeline_job = rai_classification_pipeline(
 # Output workaround to enable the download
 rand_path = str(uuid.uuid4())
 insights_pipeline_job.outputs.dashboard = Output(
-    path=f"azureml://datastores/workspaceblobstore/paths/{rand_path}/dashboard/",
-    mode="upload",
-    type="uri_folder",
+    path=f'azureml://datastores/workspaceblobstore/paths/{rand_path}/dashboard/',
+    mode='upload',
+    type='uri_folder',
 )
 insights_pipeline_job.outputs.ux_json = Output(
-    path=f"azureml://datastores/workspaceblobstore/paths/{rand_path}/ux_json/",
-    mode="upload",
-    type="uri_folder",
+    path=f'azureml://datastores/workspaceblobstore/paths/{rand_path}/ux_json/',
+    mode='upload',
+    type='uri_folder',
 )
 
 # submit and run pipeline
