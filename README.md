@@ -1,3 +1,70 @@
+In this lab, you’ll learn how to train and deploy a model in the cloud, and how to ensure it performs responsibly. We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework. The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
+
+
+# Exercise 1: Training a model in the cloud
+
+In this exercise, you'll train and deploy a custom model using Azure ML. Training in the cloud allows you to scale your training to use more compute power, and to track model versions. And deploying in the cloud allows you to do inference on your model in production environments.
+
+## Setup
+1. Open the Azure Machine Learning studio at https://ml.azure.com
+2. Then open the *1-compute-training-job-cloud.ipynb* notebook.
+3. Click on the **Run All** button on the top of the notebook to run the notebook.
+
+This notebook takes 15-20 minutes to run, so it may not be done running by the time you finish going through the material. If that's the case, move on to the next notebook, and come back at the end to see the results.
+
+
+## Task 1: Understand the training code
+
+Let's start by reading our training and test data:
+
+```python
+import pandas as pd
+
+train = pd.read_parquet('data/training_data.parquet')
+test = pd.read_parquet('data/testing_data.parquet')
+```
+
+Next we'll split the training and test data into features X (our inputs), and targets Y (our labels). 
+
+```python
+# Split train and test data into features X and targets Y.
+target_column_name = 'readmit_status'
+Y_train = train[target_column_name]
+X_train = train.drop([target_column_name], axis = 1)  
+Y_test = test[target_column_name]
+X_test = test.drop([target_column_name], axis = 1)  
+```
+
+Then we'll transform string data to numeric values using scikit-learn’s *OneHotEncoder*, and we'll standardize numeric data using scikit-learn’s *StandardScalar*. After that, we'll create a pipeline with these two processing steps, and the LogisticRegression classification model. And finally, we'll train the model using the *fit* function, and we'll score it.
+
+```python
+# Transform string data to numeric one-hot vectors
+categorical_selector = selector(dtype_exclude=np.number)
+categorical_columns = categorical_selector(X_train)
+categorial_encoder = OneHotEncoder(handle_unknown="ignore")
+
+# Standardize numeric data by removing the mean and scaling to unit variance
+numerical_selector = selector(dtype_include=np.number)
+numerical_columns = numerical_selector(X_train)
+numerical_encoder = StandardScaler()
+
+# Create a preprocessor that will preprocess both numeric and categorical data
+preprocessor = ColumnTransformer([
+('categorical-encoder', categorial_encoder, categorical_columns),
+('standard_scaler', numerical_encoder, numerical_columns)])
+
+clf = make_pipeline(preprocessor, LogisticRegression())
+
+print("Training model...") 
+model = clf.fit(X_train, Y_train)
+print("Accuracy score: ", clf.score(X_test,Y_test))
+```
+
+Well done! You should have gotten an accuracy score somewhere between 0.8 and 0.85, which is a good score!
+
+## Task 2: Create a cloud client
+
+Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace. The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
 
 In this lab, you’ll be learning the end-to-end machine learning process that involves data training a model in the cloud, registering the model, deploying the model and debugging it to perform responsibly.  We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
@@ -15,6 +82,7 @@ This notebook takes about 20 minutes to run, so it may not be done running by th
 ## Task 1: Create a cloud client
 
 Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace.  The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
+
 
 ```json
 {
@@ -36,7 +104,8 @@ credential = DefaultAzureCredential()
 ml_client = MLClient.from_config(credential=credential)
 ```
 
-## Task 2: Register the training and test data
+
+## Task 3: Register the training and test data
 
 Next we'll register the pre-cleansed training and test data from our local directory. 
 
@@ -68,7 +137,8 @@ These commands refer to the parquet training and test data stored in the local d
 
 You can verify the data is registered by opening the Azure ML studio at https://ml.azure.com, clicking on "Data," and finding the entries with the names we specified.
 
-## Task 3: Create a compute cluster
+
+## Task 4: Create a compute cluster
 
 Next we'll create a compute cluster that contains the details of the virtual machines we'll use to train our model. We'll specify a machine size, a minimum and maximum number of instances in the cluster, and the maximum number of seconds that a machine can be idle before we release for others to use.
 
@@ -87,7 +157,8 @@ ml_client.compute.begin_create_or_update(my_compute)
 
 You can verify the compute cluster was created in the Studio, by going to "Compute," and then "Compute clusters."
 
-## Task 4: Create the job
+
+## Task 5: Create the job
 
 The next step is to run the code that trains our model using our hospital data, in the cloud. We'll create a job for that purpose.
 
@@ -131,7 +202,7 @@ You can take a look at the "src/train.py" file specified in the command, if you'
 The job will take several minutes to run. You can follow the progress in the Studio by clicking on "Jobs," and then looking for the experiment name specified in the code.
 
 
-## Task 5: Register the model
+## Task 6: Register the model
 
 When the job finishes running, it outputs a trained model. We want to register that model, so that we can invoke it later to make predictions. Here's the code we need to register the model:
 
@@ -151,7 +222,7 @@ registered_model = ml_client.models.create_or_update(model)
 You can check that the model is registered by looking for the model name in the Studio, under "Models."
 
 
-## Task 6: Deploy the model
+## Task 7: Deploy the model
 
 Next we're going to create an endpoint that we can use to make predictions using our trained model. Endpoints can have multiple deployments, and direct a percentage of their traffic to each deployment. We're going to keep it simple in this scenario, by creating a single deployment that takes all the traffic.
 
@@ -185,10 +256,10 @@ ml_client.online_endpoints.begin_create_or_update(
     registered_endpoint)
 ```
 
-This takes several minutes to run. You can verify that your endpoint was created by going to the Studio, clicking on "Endpoints", and looking for the endpoint name on tht list. 
+This takes several minutes to run. You can verify that your endpoint was created by going to the Studio, clicking on "Endpoints," and looking for the endpoint name on tht list. 
 
 
-## Task 7: Invoke the endpoint
+## Task 8: Invoke the endpoint
 
 Once the endpoint is created, you can invoke it. In this case, we're going to invoke it using the input data in the file "test_data.json." You should get a prediction of "not readmitted" for this data.
 
