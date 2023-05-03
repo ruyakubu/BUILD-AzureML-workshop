@@ -1,4 +1,3 @@
-
 In this lab, you’ll learn how to train and deploy a model in the cloud, and how to ensure it performs responsibly. We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework. The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
 
@@ -63,10 +62,27 @@ print("Accuracy score: ", clf.score(X_test,Y_test))
 
 Well done! You should have gotten an accuracy score somewhere between 0.8 and 0.85, which is a good score!
 
-
 ## Task 2: Create a cloud client
 
 Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace. The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
+
+In this lab, you’ll be learning the end-to-end machine learning process that involves data training a model in the cloud, registering the model, deploying the model and debugging it to perform responsibly.  We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
+
+# Exercise 1:  Training a model in the cloud
+
+In this exercise you'll train it in the cloud.  Training in the cloud brings many advantages: you can easily track model versions, you can scale your training to use more compute power, and you can deploy it for others to use.
+
+## Prerequisites
+1. Open the Azure Machine Learning studio at https://ml.azure.com
+2. Then open the *2-compute-training-job-cloud.ipynb* notebook.
+3. Click on the **Run All** button on the top of the notebook to run the notebook.
+
+This notebook takes about 20 minutes to run, so it may not be done running by the time you finish going through the material. The data we'll be using contains the patient’s race, gender, age, their prior hospital visits, lab results, and so on - these will be our model's inputs. It also contains information on whether or not they were readmitted back to the hospital - this will be our model's output.
+
+## Task 1: Create a cloud client
+
+Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace.  The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
+
 
 ```json
 {
@@ -91,7 +107,7 @@ ml_client = MLClient.from_config(credential=credential)
 
 ## Task 3: Register the training and test data
 
-Next we'll register the training and test data we saved ealier with Azure Machine Learning. 
+Next we'll register the pre-cleansed training and test data from our local directory. 
 
 ```python
 from azure.ai.ml.entities import Data
@@ -117,7 +133,7 @@ test_data = Data(
 ts_data = ml_client.data.create_or_update(test_data)
 ```
 
-These commands refer to the parquet training and test data we have on disk, copy those files to the cloud, and give names to the new data resources. We'll use those names to refer to our data later.
+These commands refer to the parquet training and test data stored in the local data directory, copy those files to the cloud, and give names to the new data resources. We'll use those names to refer to our data later.
 
 You can verify the data is registered by opening the Azure ML studio at https://ml.azure.com, clicking on "Data," and finding the entries with the names we specified.
 
@@ -181,7 +197,7 @@ job = ml_client.jobs.create_or_update(job)
 ml_client.jobs.stream(job.name)
 ```
 
-You can take a look at the "src/train.py" file specified in the command, if you'd like. It contains the training code you're already familiar with, a bit of code to deal with the arguments, and a couple of lines of code to save the model usingn the MLFlow package. 
+You can take a look at the "src/train.py" file specified in the command, if you'd like. It contains the training code you're already familiar with, a bit of code to deal with the arguments, and a couple of lines of code to save the model using the MLFlow package. 
 
 The job will take several minutes to run. You can follow the progress in the Studio by clicking on "Jobs," and then looking for the experiment name specified in the code.
 
@@ -264,9 +280,8 @@ In this exercise, you’ll be learning how to create the Responsible AI dashboar
 
 ## Prerequisites
 1. Open the Azure Machine Learning studio at https://ml.azure.com
-2. Click on *Notebooks* on the left navigation menu.
-3. Under your username, click on *Upload folder* option and upload the *BUILD-AzureML-workshop* directory that you cloned in the last exercise. (**ONLY**:  If you have not already uploaded the directory)
-4. Then open the **3-create-responsibleai-dashboard.ipynb** notebook.
+2. Then open the *3-create-responsibleai-dashboard.ipynb* notebook from the lab directory
+3. Click on the **Run All** button on the top of the notebook to run the notebook
 
 ## Task 1: Define the dashboard components
 
@@ -331,7 +346,7 @@ The RAI constructor component is what initializes the global data needed for the
         create_rai_job.set_limits(timeout=120)
 ``` 
 
-The Explanation component is responsible for the dashboard providing a better understanding of what features influence the model’s predictions. It takes a comment that is a description pertaining to your use case. Then sets the *rai_insights_dashboard* to be the output insights generated from the RAI pipeline job for Explanations.
+The Explanation component is responsible for the dashboard providing a better understanding of what features influence the model’s predictions. It takes a comment that is a description field. Then sets the *rai_insights_dashboard* to be the output insights generated from the RAI pipeline job for Explanations.
 
 ``` python
         # Explanation
@@ -352,7 +367,7 @@ The Error Analysis component is responsible for the dashboard providing an error
         erroranalysis_job.set_limits(timeout=120)
 ```
 
-Once all the RAI components are configured with the parameters needed for the use case, the next thing to do is add all of them into the list of insights to include on the RAI dashboard. Then upload the dashboard and UX settings for the RAI Dashboard.
+Once all the RAI components are configured with the parameters needed for the use case, the next thing to do is add all of them into the list of insights to include on the RAI dashboard. Then upload the dashboard instance and UX settings for the RAI Dashboard.
 
 ``` python
         rai_gather_job = rai_gather_component(
@@ -365,9 +380,9 @@ Once all the RAI components are configured with the parameters needed for the us
 
 The pipeline job outputs are the dashboard and UX configuration to be displayed.
 
-## Task 2: Run job to create the dashboard
+## Task 3: Run job to create the dashboard
 
-After the pipeline is defined, we'll initialize it by specifying the input parameters and the path to the outputs. Lastly, we use the submit_and_wait function to run the pipeline and register it to the Azure Machine Learning studio.
+After the pipeline is defined, we'll initialize it by specifying the input parameters and the path to the outputs. Lastly, we use the *submit_and_wait function* to run the pipeline and register it to the Azure Machine Learning studio.
 
 ``` python
 # Pipeline Inputs
