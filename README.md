@@ -243,7 +243,7 @@ In this exercise, you’ll be learning how to create the Responsible AI dashboar
 
 ## Prerequisites
 1. Open the Azure Machine Learning studio at https://ml.azure.com
-2. Then open the *3-create-responsibleai-dashboard.ipynb* notebook from the lab directory
+2. Then open the *2-create-responsibleai-dashboard.ipynb* notebook from the lab directory
 3. Click on the **Run All** button on the top of the notebook to run the notebook
 
 ## Task 1: Define the dashboard components
