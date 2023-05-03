@@ -1,126 +1,29 @@
 
-In this lab, you’ll be learning the end-to-end machine learning process that involves data preparation, training a model locally and in the cloud, and debugging it to perform responsibly.  We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
+In this lab, you’ll learn how to train and deploy a model in the cloud, and how to ensure it performs responsibly. We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework. The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
-# Exercise 1:  Training a model locally
+# Exercise 1: Training a model in the cloud
 
-## Prerequisites
-1. Clone the lab repository into your local machine.
-```bash
-git clone https://github.com/ruyakubu/BUILD-AzureML-workshop.git
-```
-2. Change directory into the lab folder.
-```bash
-cd BUILD-AzureML-workshop
-```
-3. Open the lab folder in Visual Studio Code.
-4. Then open the *1-dataprep-and-training-local.ipynb* notebook.
-5. Click on the **Run All** button on the top of the notebook to run the notebook.
+In this exercise, you'll train and deploy a custom model using Azure ML. Training in the cloud allows you to scale your training to use more compute power, and to track model versions. And deploying in the cloud allows you to do inference on your model in production environments.
 
+## Setup
+1. Open the Azure Machine Learning studio at https://ml.azure.com
+2. Then open the *1-compute-training-job-cloud.ipynb* notebook.
+3. Click on the **Run All** button on the top of the notebook to run the notebook.
 
-We'll start by cleaning our dataset: we'll check for special characters, remove missing values, delete irrelevant columns, and reformat our data. After the data has been cleansed, we’ll train the model. 
+This notebook takes 15-20 minutes to run, so it may not be done running by the time you finish going through the material. If that's the case, move on to the next notebook, and come back at the end to see the results.
 
-## Task 1: Data Preparation
+## Task 1: Understand the training code
 
-For this exercise, you’ll need to load the **1-dataprep-and-training-local.ipynb** jupyter notebook.
-
-Let's first read the hospital diabetes data into a DataFrame, using the "read_csv" function from the “pandas” library.
+Let's start by reading our training and test data:
 
 ```python
-df = pd.read_csv('data/diabetic_data.csv')
+import pandas as pd
+
+train = pd.read_parquet('data/training_data.parquet')
+test = pd.read_parquet('data/testing_data.parquet')
 ```
 
-*Understanding the dataset*
-
-Next we'll check the size of the data to verify that it will be sufficient for our training. 
-
-```python
-df.shape
-```
-
-101,766 is a very large dataset, which is good.
-
-Let’s display the DataFrame to see what kind of features are in the diabetes patients’ hospital data. 
-
-```python
-df.head()
-```
-
-As you can see it contains the patient’s race, gender, age, weight, their prior hospital visits, lab results, and so on - these will be our model's inputs.  It also contains information on whether or not they were readmitted back to the hospital - this will be our model's output. 
-
-*Checking for special characters*
-
-If you look at the *weight* column in the portion of the DataFrame you printed, you'll notice that some of its values contain "?". Let's change that character to null.
-
-```python
-df = df.replace('?', np.NaN) 
-df.head() 
-```
-
-*Removing null values*
-
-Running the *count* function on the dataframe tells us how many values in each column are not null. 
-
-```python
-df.count()
-```
-
-As you can see, we have null values in most columns, and *weight* in particular has a lot of null values. Even thought the patient's weight is likely to impact the readmission status, we've decided to drop it because it contains such little information.
-
-```python
-df = df.drop(['weight'], axis=1)
-```
-
-We'll also drop all rows that contain some null values:
-
-```python
-df = df.dropna()
-```
-
-*Deleting irrelevant columns*
-
-There are 20+ columns that are not relevant to whether the patient is readmitted to the hospital, so we'll drop those.
-
-```python
-df.drop(['encounter_id', 'patient_nbr', 'payer_code', 'medical_specialty', 'admission_type_id', 'repaglinide','nateglinide','chlorpropamide','glimepiride','acetohexamide','glipizide','glyburide','tolbutamide','pioglitazone','rosiglitazone','acarbose','miglitol','troglitazone','tolazamide','examide','citoglipton', 'metformin','glyburide-metformin','glipizide-metformin' 'glimepiride-pioglitazone','metformin-rosiglitazone','metformin-pioglitazone', 'diag_2', 'diag_3', 'change'], axis=1, inplace=True)
-```
-
-*Formatting data*
-
-To make it easier to work with this data later in this workshop, we'll rename some columns to make their names more readable, and we'll consolidate some categories.
-
-For example, in the code snippet below, we replace the age groups with better descriptions. And because some age groups have very few patients, we'll also combine them into larger age groups:
-
-```python
-df.loc[:, "age"] = df["age"].replace( ["[0-10)", "[10-20)", "[20-30)"], "30 years or younger")
-df.loc[:, "age"] = df["age"].replace(["[30-40)", "[40-50)", "[50-60)"], "30-60 years")
-df.loc[:, "age"] = df["age"].replace(["[60-70)", "[70-80)", "[80-90)", "[90-100)"], "Over 60 years")
-```
-
-We'll do similar renaming and aggregating operations for other columns. It's not critical to understand the code in this section in order to understand the rest of the workshop, so let's move on to training the dataset.
-
-
-## Task 2:  Training data
-
-Now that the data has been cleansed, we can use it to train our diabetes hospital readmission classification model. We'll start by reducing the number of rows in the DataFrame to make training a bit faster for the workshop.
-
-```python
-df = df.sample(frac=0.20)
-```
-
-Then we'll split the training and testing datasets with scikit-learn’s *train_test_spilt* function. 
-
-```python
-train, test = train_test_split(df, train_size=0.80, random_state=1)
-```
-
-Next we'll format both datasets to a parquet file.  The data files will be store on the local machine to be used later.
-
-```python
-train.to_parquet('data/training_data.parquet')
-test.to_parquet('data/testing_data.parquet')
-```
-
-Next we'll split the train and test data into features X (our inputs), and targets Y (our labels). 
+Next we'll split the training and test data into features X (our inputs), and targets Y (our labels). 
 
 ```python
 # Split train and test data into features X and targets Y.
@@ -131,7 +34,7 @@ Y_test = test[target_column_name]
 X_test = test.drop([target_column_name], axis = 1)  
 ```
 
-Then we'll transform string data to numeric values using scikit-learn’s *OneHotEncoder*, and we'll standardize numeric data using scikit-learn’s *StandardScalar*.  After that, we'll create a pipeline with these two processing steps, and the LogisticRegression classification model.  And finally, we'll train the model using the *fit* function, and we'll score it.
+Then we'll transform string data to numeric values using scikit-learn’s *OneHotEncoder*, and we'll standardize numeric data using scikit-learn’s *StandardScalar*. After that, we'll create a pipeline with these two processing steps, and the LogisticRegression classification model. And finally, we'll train the model using the *fit* function, and we'll score it.
 
 ```python
 # Transform string data to numeric one-hot vectors
@@ -156,23 +59,12 @@ model = clf.fit(X_train, Y_train)
 print("Accuracy score: ", clf.score(X_test,Y_test))
 ```
 
-Well done...a score of around 0.85 looks good!
+Well done... 0.85 is a good score!
 
 
-# Exercise 2:  Training a model in the cloud
+## Task 2: Create a cloud client
 
-In the previous exercise you trained your model locally, and in this exercise you'll train it in the cloud.  Training in the cloud brings many advantages: you can easily track model versions, you can scale your training to use more compute power, and you can deploy it for others to use.
-
-## Prerequisites
-1. Open the Azure Machine Learning studio at https://ml.azure.com
-2. Then open the *2-compute-training-job-cloud.ipynb* notebook.
-3. Click on the **Run All** button on the top of the notebook to run the notebook.
-
-This notebook takes about 20 minutes to run, so it may not be done running by the time you finish going through the material. If that's the case, move on to the third notebook, and come back at the end to see the results.
-
-## Task 1: Create a cloud client
-
-Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace.  The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
+Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace. The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
 
 ```json
 {
@@ -194,7 +86,7 @@ credential = DefaultAzureCredential()
 ml_client = MLClient.from_config(credential=credential)
 ```
 
-## Task 2: Register the training and test data
+## Task 3: Register the training and test data
 
 Next we'll register the training and test data we saved ealier with Azure Machine Learning. 
 
@@ -222,11 +114,11 @@ test_data = Data(
 ts_data = ml_client.data.create_or_update(test_data)
 ```
 
-These commands refer to the parquet training and test data we saved to disk in notebook 1, copy those files to the cloud, and give names to the new data resources. We'll use those names to refer to our data later.
+These commands refer to the parquet training and test data we have on disk, copy those files to the cloud, and give names to the new data resources. We'll use those names to refer to our data later.
 
 You can verify the data is registered by opening the Azure ML studio at https://ml.azure.com, clicking on "Data," and finding the entries with the names we specified.
 
-## Task 3: Create a compute cluster
+## Task 4: Create a compute cluster
 
 Next we'll create a compute cluster that contains the details of the virtual machines we'll use to train our model. We'll specify a machine size, a minimum and maximum number of instances in the cluster, and the maximum number of seconds that a machine can be idle before we release for others to use.
 
@@ -245,7 +137,7 @@ ml_client.compute.begin_create_or_update(my_compute)
 
 You can verify the compute cluster was created in the Studio, by going to "Compute," and then "Compute clusters."
 
-## Task 4: Create the job
+## Task 5: Create the job
 
 The next step is to run the code that trains our model using our hospital data, in the cloud. We'll create a job for that purpose.
 
@@ -288,8 +180,7 @@ You can take a look at the "src/train.py" file specified in the command, if you'
 
 The job will take several minutes to run. You can follow the progress in the Studio by clicking on "Jobs," and then looking for the experiment name specified in the code.
 
-
-## Task 5: Register the model
+## Task 6: Register the model
 
 When the job finishes running, it outputs a trained model. We want to register that model, so that we can invoke it later to make predictions. Here's the code we need to register the model:
 
@@ -309,7 +200,7 @@ registered_model = ml_client.models.create_or_update(model)
 You can check that the model is registered by looking for the model name in the Studio, under "Models."
 
 
-## Task 6: Deploy the model
+## Task 7: Deploy the model
 
 Next we're going to create an endpoint that we can use to make predictions using our trained model. Endpoints can have multiple deployments, and direct a percentage of their traffic to each deployment. We're going to keep it simple in this scenario, by creating a single deployment that takes all the traffic.
 
@@ -343,10 +234,9 @@ ml_client.online_endpoints.begin_create_or_update(
     registered_endpoint)
 ```
 
-This takes several minutes to run. You can verify that your endpoint was created by going to the Studio, clicking on "Endpoints", and looking for the endpoint name on tht list. 
+This takes several minutes to run. You can verify that your endpoint was created by going to the Studio, clicking on "Endpoints," and looking for the endpoint name on tht list. 
 
-
-## Task 7: Invoke the endpoint
+## Task 8: Invoke the endpoint
 
 Once the endpoint is created, you can invoke it. In this case, we're going to invoke it using the input data in the file "test_data.json." You should get a prediction of "not readmitted" for this data.
 
@@ -361,8 +251,7 @@ print(result)
 Well done! You trained a model in the cloud, and you created an endpoint that you (or anyone!) can use to make predictions! :)
 
 
-# Exercise 3:  Add a Responsible AI dashboard
-
+# Exercise 2:  Add a Responsible AI dashboard
 
 In this exercise, you’ll be learning how to create the Responsible AI dashboard to use the model you trained in the previous exercise. The dashboard is comprised of different components to enable you to debug and analyze the model performance, identify errors, conduct fairness assessment, evaluate performance model interpretability and more.
 
@@ -518,7 +407,7 @@ Terrific…you now have a Responsible AI dashboard.
 
 ![Azure ML dasboard gif](/img/rai-dashboard.gif)
 
-# Exercise 4:  Debugging your model with Responsible AI (RAI) dashboard
+# Exercise 3:  Debugging your model with Responsible AI (RAI) dashboard
 
 In this exercise, you will use the RAI dashboard to debug the diabetes hospital readmission classification model. Traditional machine learning performance metrics provide aggregated calculations which are insufficient in exposing any undesirable responsible AI issues. The RAI dashboard enables users to identify model error distribution; understand features driving a model’s outcome; and assess any disproportional representation for sensitive features such as race, gender, political views, or religion.
 
