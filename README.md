@@ -1,6 +1,7 @@
 
 In this lab, you’ll learn how to train and deploy a model in the cloud, and how to ensure it performs responsibly. We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework. The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
+
 # Exercise 1: Training a model in the cloud
 
 In this exercise, you'll train and deploy a custom model using Azure ML. Training in the cloud allows you to scale your training to use more compute power, and to track model versions. And deploying in the cloud allows you to do inference on your model in production environments.
@@ -11,6 +12,7 @@ In this exercise, you'll train and deploy a custom model using Azure ML. Trainin
 3. Click on the **Run All** button on the top of the notebook to run the notebook.
 
 This notebook takes 15-20 minutes to run, so it may not be done running by the time you finish going through the material. If that's the case, move on to the next notebook, and come back at the end to see the results.
+
 
 ## Task 1: Understand the training code
 
@@ -59,7 +61,7 @@ model = clf.fit(X_train, Y_train)
 print("Accuracy score: ", clf.score(X_test,Y_test))
 ```
 
-Well done... 0.85 is a good score!
+Well done! You should have gotten an accuracy score somewhere between 0.8 and 0.85, which is a good score!
 
 
 ## Task 2: Create a cloud client
@@ -85,6 +87,7 @@ from azure.identity import DefaultAzureCredential
 credential = DefaultAzureCredential()
 ml_client = MLClient.from_config(credential=credential)
 ```
+
 
 ## Task 3: Register the training and test data
 
@@ -118,6 +121,7 @@ These commands refer to the parquet training and test data we have on disk, copy
 
 You can verify the data is registered by opening the Azure ML studio at https://ml.azure.com, clicking on "Data," and finding the entries with the names we specified.
 
+
 ## Task 4: Create a compute cluster
 
 Next we'll create a compute cluster that contains the details of the virtual machines we'll use to train our model. We'll specify a machine size, a minimum and maximum number of instances in the cluster, and the maximum number of seconds that a machine can be idle before we release for others to use.
@@ -136,6 +140,7 @@ ml_client.compute.begin_create_or_update(my_compute)
 ```
 
 You can verify the compute cluster was created in the Studio, by going to "Compute," and then "Compute clusters."
+
 
 ## Task 5: Create the job
 
@@ -179,6 +184,7 @@ ml_client.jobs.stream(job.name)
 You can take a look at the "src/train.py" file specified in the command, if you'd like. It contains the training code you're already familiar with, a bit of code to deal with the arguments, and a couple of lines of code to save the model usingn the MLFlow package. 
 
 The job will take several minutes to run. You can follow the progress in the Studio by clicking on "Jobs," and then looking for the experiment name specified in the code.
+
 
 ## Task 6: Register the model
 
@@ -235,6 +241,7 @@ ml_client.online_endpoints.begin_create_or_update(
 ```
 
 This takes several minutes to run. You can verify that your endpoint was created by going to the Studio, clicking on "Endpoints," and looking for the endpoint name on tht list. 
+
 
 ## Task 8: Invoke the endpoint
 
