@@ -41,7 +41,7 @@ Then we'll transform string data to numeric values using scikit-learn’s *OneHo
 # Transform string data to numeric one-hot vectors
 categorical_selector = selector(dtype_exclude=np.number)
 categorical_columns = categorical_selector(X_train)
-categorial_encoder = OneHotEncoder(handle_unknown="ignore")
+categorial_encoder = OneHotEncoder(handle_unknown='ignore')
 
 # Standardize numeric data by removing the mean and scaling to unit variance
 numerical_selector = selector(dtype_include=np.number)
@@ -55,18 +55,27 @@ preprocessor = ColumnTransformer([
 
 clf = make_pipeline(preprocessor, LogisticRegression())
 
-print("Training model...") 
+print('Training model...') 
 model = clf.fit(X_train, Y_train)
-print("Accuracy score: ", clf.score(X_test,Y_test))
+print('Accuracy score: ', clf.score(X_test,Y_test))
 ```
 
 Well done! You should have gotten an accuracy score somewhere between 0.8 and 0.85, which is a good score!
+
 
 ## Task 2: Create a cloud client
 
 Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace. The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
 
-In this lab, you’ll be learning the end-to-end machine learning process that involves data training a model in the cloud, registering the model, deploying the model and debugging it to perform responsibly.  We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
+Here's the authentication code:
+
+```python
+from azure.ai.ml import MLClient
+from azure.identity import DefaultAzureCredential
+
+credential = DefaultAzureCredential()
+ml_client = MLClient.from_config(credential=credential)
+```
 
 ## Task 3: Register the training and test data
 
@@ -76,11 +85,11 @@ Next we'll register the pre-cleansed training and test data from our local direc
 from azure.ai.ml.entities import Data
 from azure.ai.ml.constants import AssetTypes
 
-TRAIN_DATA_NAME = 'hospital_train_parquet'
-TEST_DATA_NAME = 'hospital_test_parquet'
+train_data_name = 'hospital_train_parquet'
+test_data_name = 'hospital_test_parquet'
 
 training_data = Data(
-    name=TRAIN_DATA_NAME,
+    name=train_data_name,
     path='data/training_data.parquet',
     type=AssetTypes.URI_FILE,
     description='RAI hospital train data'
@@ -88,7 +97,7 @@ training_data = Data(
 tr_data = ml_client.data.create_or_update(training_data)
 
 test_data = Data(
-    name=TEST_DATA_NAME,
+    name=test_data_name,
     path='data/testing_data.parquet',
     type=AssetTypes.URI_FILE,
     description='RAI hospital test data'
@@ -108,9 +117,11 @@ Next we'll create a compute cluster that contains the details of the virtual mac
 ```python
 from azure.ai.ml.entities import AmlCompute
 
+compute_name = 'trainingcompute'
+
 my_compute = AmlCompute(
-    name="trainingcompute",
-    size="Standard_DS2_v2",
+    name=compute_name,
+    size='Standard_DS2_v2',
     min_instances=0,
     max_instances=4,
     idle_time_before_scale_down=3600
@@ -137,17 +148,16 @@ We need to specify the following information to create this job:
 
 ```python
 from azure.ai.ml import command, Input, Output
-from azure.ai.ml.entities import Model
 
-TARGET_COLUMN_NAME = 'readmit_status'
+target_column_name = 'readmit_status'
 
 # Create the job.
 job = command(
     description='Trains hospital readmission model',
     experiment_name='hospital_readmission',
-    compute=COMPUTE_NAME,
-    inputs=dict(training_data=Input(type='uri_file', path=f'{TRAIN_DATA_NAME}@latest'), 
-                target_column_name=TARGET_COLUMN_NAME),
+    compute=compute_name,
+    inputs=dict(training_data=Input(type='uri_file', path=f'{train_data_name}@latest'), 
+                target_column_name=target_column_name),
     outputs=dict(model_output=Output(type=AssetTypes.MLFLOW_MODEL)),
     code='src/',
     environment='azureml://registries/azureml/environments/AzureML-responsibleai-0.20-ubuntu20.04-py38-cpu/versions/4',
@@ -172,11 +182,11 @@ When the job finishes running, it outputs a trained model. We want to register t
 ```python
 from azure.ai.ml.entities import Model
 
-MODEL_NAME = 'hospital_readmission_model'
+model_name = 'hospital_readmission_model'
 
 # Register the model.
-model_path = f"azureml://jobs/{job.name}/outputs/model_output"
-model = Model(name=MODEL_NAME,
+model_path = f'azureml://jobs/{job.name}/outputs/model_output'
+model = Model(name=model_name,
                 path=model_path,
                 type=AssetTypes.MLFLOW_MODEL)
 registered_model = ml_client.models.create_or_update(model)
@@ -192,29 +202,27 @@ Next we're going to create an endpoint that we can use to make predictions using
 ```python
 from azure.ai.ml.entities import ManagedOnlineDeployment, ManagedOnlineEndpoint 
 
-ENDPOINT_NAME = 'hospital-readmission-endpoint'
-DEPLOYMENT_NAME = 'blue'
+endpoint_name = 'hospital-readmission-endpoint'
+deployment_name = 'blue'
 
 # Create the managed online endpoint.
 endpoint = ManagedOnlineEndpoint(
-    name=ENDPOINT_NAME,
+    name=endpoint_name,
     auth_mode='key',
 )
-registered_endpoint = ml_client.online_endpoints.begin_create_or_update(endpoint)
-
-# Get the latest version of the registered model.
-registered_model = ml_client.models.get(name=MODEL_NAME, label='latest')
+registered_endpoint = ml_client.online_endpoints.begin_create_or_update(
+    endpoint)
 
 # Create the managed online deployment.
-deployment = ManagedOnlineDeployment(name=DEPLOYMENT_NAME,
-                                        endpoint_name=ENDPOINT_NAME,
+deployment = ManagedOnlineDeployment(name=deployment_name,
+                                        endpoint_name=endpoint_name,
                                         model=registered_model,
                                         instance_type='Standard_DS4_v2',
                                         instance_count=1)
 ml_client.online_deployments.begin_create_or_update(deployment)
 
 # Set deployment traffic to 100%.
-registered_endpoint.traffic = {DEPLOYMENT_NAME: 100}
+registered_endpoint.traffic = {deployment_name: 100}
 ml_client.online_endpoints.begin_create_or_update(
     registered_endpoint)
 ```
@@ -227,10 +235,10 @@ This takes several minutes to run. You can verify that your endpoint was created
 Once the endpoint is created, you can invoke it. In this case, we're going to invoke it using the input data in the file "test_data.json." You should get a prediction of "not readmitted" for this data.
 
 ```python
-TEST_DATA_PATH="test_data.json"
+test_data_path='test_data.json'
 
 # Invoke the endpoint.
-result = ml_client.online_endpoints.invoke(endpoint_name=ENDPOINT_NAME, request_file=TEST_DATA_PATH)
+result = ml_client.online_endpoints.invoke(endpoint_name=endpoint_name, request_file=test_data_path)
 print(result)
 ```
 
@@ -255,25 +263,25 @@ The Responsible AI dashboard components are already pre-defined in the Azure Mac
 * Insight Gather
 
 ``` python
-label = "latest"
+label = 'latest'
 
 rai_constructor_component = ml_client_registry.components.get(
-    name="microsoft_azureml_rai_tabular_insight_constructor", label=label
+    name='microsoft_azureml_rai_tabular_insight_constructor', label=label
 )
 
 # We get latest version and use the same version for all components
 version = rai_constructor_component.version
 
 rai_explanation_component = ml_client_registry.components.get(
-    name="microsoft_azureml_rai_tabular_explanation", version=version
+    name='microsoft_azureml_rai_tabular_explanation', version=version
 )
 
 rai_erroranalysis_component = ml_client_registry.components.get(
-    name="microsoft_azureml_rai_tabular_erroranalysis", version=version
+    name='microsoft_azureml_rai_tabular_erroranalysis', version=version
 )
 
 rai_gather_component = ml_client_registry.components.get(
-    name="microsoft_azureml_rai_tabular_insight_gather", version=version
+    name='microsoft_azureml_rai_tabular_insight_gather', version=version
 )
 ```
 
@@ -297,8 +305,8 @@ The RAI constructor component is what initializes the global data needed for the
 ``` python
         # Initiate the RAIInsights
         create_rai_job = rai_constructor_component(
-            title="RAI Dashboard",
-            task_type="classification",
+            title='RAI Dashboard',
+            task_type='classification',
             model_info=expected_model_id,
             model_input=Input(type=AssetTypes.MLFLOW_MODEL, path=azureml_model_id),            
             train_dataset=training_data,
@@ -314,7 +322,7 @@ The Explanation component is responsible for the dashboard providing a better un
 ``` python
         # Explanation
         explanation_job = rai_explanation_component(
-            comment="Explain the model",
+            comment='Explain the model',
             rai_insights_dashboard=create_rai_job.outputs.rai_insights_dashboard,
         )
         explanation_job.set_limits(timeout=120)
@@ -358,14 +366,14 @@ insights_pipeline_job = rai_classification_pipeline(
 # Output workaround to enable the download
 rand_path = str(uuid.uuid4())
 insights_pipeline_job.outputs.dashboard = Output(
-    path=f"azureml://datastores/workspaceblobstore/paths/{rand_path}/dashboard/",
-    mode="upload",
-    type="uri_folder",
+    path=f'azureml://datastores/workspaceblobstore/paths/{rand_path}/dashboard/',
+    mode='upload',
+    type='uri_folder',
 )
 insights_pipeline_job.outputs.ux_json = Output(
-    path=f"azureml://datastores/workspaceblobstore/paths/{rand_path}/ux_json/",
-    mode="upload",
-    type="uri_folder",
+    path=f'azureml://datastores/workspaceblobstore/paths/{rand_path}/ux_json/',
+    mode='upload',
+    type='uri_folder',
 )
 
 # submit and run pipeline
