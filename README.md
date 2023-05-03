@@ -68,43 +68,6 @@ Before you can use the Azure Machine Learning studio, you need to create a cloud
 
 In this lab, you’ll be learning the end-to-end machine learning process that involves data training a model in the cloud, registering the model, deploying the model and debugging it to perform responsibly.  We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework.  The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
-# Exercise 1:  Training a model in the cloud
-
-In this exercise you'll train it in the cloud.  Training in the cloud brings many advantages: you can easily track model versions, you can scale your training to use more compute power, and you can deploy it for others to use.
-
-## Prerequisites
-1. Open the Azure Machine Learning studio at https://ml.azure.com
-2. Then open the *2-compute-training-job-cloud.ipynb* notebook.
-3. Click on the **Run All** button on the top of the notebook to run the notebook.
-
-This notebook takes about 20 minutes to run, so it may not be done running by the time you finish going through the material. The data we'll be using contains the patient’s race, gender, age, their prior hospital visits, lab results, and so on - these will be our model's inputs. It also contains information on whether or not they were readmitted back to the hospital - this will be our model's output.
-
-## Task 1: Create a cloud client
-
-Before you can use the Azure Machine Learning studio, you need to create a cloud client session to authenticate and connect to the workspace.  The authorization needs the subscription id, resource group, and name of the Azure ML workspace, which it gets from the "config.json" file in this repo.
-
-
-```json
-{
-    "subscription_id": "...",
-    "resource_group": "...",
-    "workspace_name": "..."
-}
-```
-
-TODO: Need to ask Skillable to create a config.json file with the authentication details.
-
-With that file in place, we can authenticate with the following code:
-
-```python
-from azure.ai.ml import MLClient
-from azure.identity import DefaultAzureCredential
-
-credential = DefaultAzureCredential()
-ml_client = MLClient.from_config(credential=credential)
-```
-
-
 ## Task 3: Register the training and test data
 
 Next we'll register the pre-cleansed training and test data from our local directory. 
