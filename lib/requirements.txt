@@ -1,5 +1,5 @@
 azure-common
-azure-ai-ml==0.1.0b7
+azure-ai-ml
 azure-identity
 mlflow
 azureml-mlflow
@@ -8,8 +8,9 @@ azureml_dataprep
 azureml_dataprep_rslex
 responsibleai==0.24.0 
 raiwidgets==0.24.0
-pandas 
+pandas==1.1.5
 numpy 
+scikit-learn
 sklearn 
 fastparquet
 pyarrow==9.0.0
