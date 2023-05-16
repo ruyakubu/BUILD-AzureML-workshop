@@ -8,7 +8,7 @@ azureml_dataprep
 azureml_dataprep_rslex
 responsibleai==0.24.0 
 raiwidgets==0.24.0
-pandas==1.1.5
+pandas==1.5.3
 numpy 
 scikit-learn
 sklearn 
