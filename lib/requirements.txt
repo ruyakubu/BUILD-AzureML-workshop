@@ -1,5 +1,6 @@
 azure-common
 azure-ai-ml==0.1.0b7
+azure-identity
 mlflow
 azureml-mlflow
 mltable==0.1.0b4
