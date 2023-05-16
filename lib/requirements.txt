@@ -12,5 +12,5 @@ pandas
 numpy 
 sklearn 
 fastparquet
-pyarrow 
+pyarrow==9.0.0
 shap 
