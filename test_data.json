@@ -1,0 +1,7 @@
+{
+    "input_data":{
+        "index":[0],
+        "columns":["race", "gender", "age", "discharge_destination", "admission_source", "time_in_hospital", "num_lab_procedures", "num_procedures", "num_medications",	"prior_outpatient", "prior_emergency", "prior_inpatient", "primary_diagnosis", "number_diagnoses", "max_glu_serum",	"A1Cresult", "insulin", "diabetes_Med_prescribe"],
+        "data":[["Caucasian", "Female", "Over 60 years", "Other", "Other", "8", "59", "2", "13",	"0", "0", "0", "Other",	"3", "None", "None", "Steady", "Yes"]]
+    }
+}
