@@ -1,16 +1,14 @@
-In this lab, you’ll learn how to train and deploy a model in the cloud, and how to ensure it performs responsibly. We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework. The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
+In this lab, you’ll learn how to train a model in the cloud, and how to ensure it performs responsibly. We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework. The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
 
 # Exercise 1: Training a model in the cloud
 
-In this exercise, you'll train and deploy a custom model using Azure ML. Training in the cloud allows you to scale your training to use more compute power, and to track model versions. And deploying in the cloud allows you to do inference on your model in production environments.
+In this exercise, you'll train a custom model using Azure ML. Training in the cloud allows you to scale your training to use more compute power, and to track model versions.
 
 ## Setup
 1. Open the Azure Machine Learning studio at https://ml.azure.com
 2. Then open the *1-compute-training-job-cloud.ipynb* notebook.
 3. Click on the **Run All** button on the top of the notebook to run the notebook.
-
-This notebook takes 15-20 minutes to run, so it may not be done running by the time you finish going through the material. If that's the case, move on to the next notebook, and come back at the end to see the results.
 
 
 ## Task 1: Understand the training code
@@ -126,7 +124,7 @@ my_compute = AmlCompute(
     max_instances=4,
     idle_time_before_scale_down=3600
 )
-ml_client.compute.begin_create_or_update(my_compute)
+ml_client.compute.begin_create_or_update(my_compute).result()
 ```
 
 You can verify the compute cluster was created in the Studio, by going to "Compute," and then "Compute clusters."
@@ -193,56 +191,6 @@ registered_model = ml_client.models.create_or_update(model)
 ```
 
 You can check that the model is registered by looking for the model name in the Studio, under "Models."
-
-
-## Task 7: Deploy the model
-
-Next we're going to create an endpoint that we can use to make predictions using our trained model. Endpoints can have multiple deployments, and direct a percentage of their traffic to each deployment. We're going to keep it simple in this scenario, by creating a single deployment that takes all the traffic.
-
-```python
-from azure.ai.ml.entities import ManagedOnlineDeployment, ManagedOnlineEndpoint 
-
-endpoint_name = 'hospital-readmission-endpoint'
-deployment_name = 'blue'
-
-# Create the managed online endpoint.
-endpoint = ManagedOnlineEndpoint(
-    name=endpoint_name,
-    auth_mode='key',
-)
-registered_endpoint = ml_client.online_endpoints.begin_create_or_update(
-    endpoint)
-
-# Create the managed online deployment.
-deployment = ManagedOnlineDeployment(name=deployment_name,
-                                        endpoint_name=endpoint_name,
-                                        model=registered_model,
-                                        instance_type='Standard_DS4_v2',
-                                        instance_count=1)
-ml_client.online_deployments.begin_create_or_update(deployment)
-
-# Set deployment traffic to 100%.
-registered_endpoint.traffic = {deployment_name: 100}
-ml_client.online_endpoints.begin_create_or_update(
-    registered_endpoint)
-```
-
-This takes several minutes to run. You can verify that your endpoint was created by going to the Studio, clicking on "Endpoints," and looking for the endpoint name on tht list. 
-
-
-## Task 8: Invoke the endpoint
-
-Once the endpoint is created, you can invoke it. In this case, we're going to invoke it using the input data in the file "test_data.json." You should get a prediction of "not readmitted" for this data.
-
-```python
-test_data_path='test_data.json'
-
-# Invoke the endpoint.
-result = ml_client.online_endpoints.invoke(endpoint_name=endpoint_name, request_file=test_data_path)
-print(result)
-```
-
-Well done! You trained a model in the cloud, and you created an endpoint that you (or anyone!) can use to make predictions! :)
 
 
 # Exercise 2:  Add a Responsible AI dashboard
