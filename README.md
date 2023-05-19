@@ -105,7 +105,7 @@ ts_data = ml_client.data.create_or_update(test_data)
 
 These commands refer to the parquet training and test data stored in the local data directory, copy those files to the cloud, and give names to the new data resources. We'll use those names to refer to our data later.
 
-You can verify the data is registered by opening the Azure ML studio at https://ml.azure.com, clicking on "Data," and finding the entries with the names we specified.
+You can verify the data is registered by opening the Azure ML studio at [https://ml.azure.com](https://ml.azure.com), clicking on "Data," and finding the entries with the names we specified.
 
 
 ## Task 4: Create a compute cluster
