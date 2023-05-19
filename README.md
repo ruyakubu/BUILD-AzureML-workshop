@@ -373,6 +373,7 @@ In the above diagram, the first thing we observe from the root node is that out 
 ![Tree map High error rate](/img/3-ea-save-higherror-cohort.png)
 
 4. Click on the **Save** button to save the cohort.
+5. Click on the **Clear selection** button on the left side of the Tree to clear the selection.
 
 As much as it’s advantageous in finding out why the model is performing poorly, it is equally important to figure out what’s causing our model to perform well for some data cohorts.  So, we’ll need to find the tree path with the least number of errors to gain insights as to why the model is performing better in this cohort vs others. 
 
@@ -387,6 +388,7 @@ As much as it’s advantageous in finding out why the model is performing poorly
 ![Tree map High error rate](/img/5-ea-save-lowerror-cohort.png)
 
 4. Click on the **Save** button to save the cohort.
+5. Click on the **Clear selection** button on the left side of the Tree to clear the selection.
 
 This is adequate for you to start investigating model inaccuracies, comparing the different features between top and bottom performing cohorts will be useful for improving our overall model quality.  
 
