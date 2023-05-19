@@ -233,7 +233,7 @@ rai_gather_component = ml_client_registry.components.get(
 )
 ```
 
-## Task 2: Create the job to create the dashboard
+## Task 2: Define the job to create the RAI dashboard insights
 
 When you have specified the RAI components you need, it is time to define an [Azure pipeline](https://aka.ms/MBAzureMLPipeline) and configure each component. (**NOTE**: For the list of additional settings to configure each of your RAI components, refer to [RAI component parameters](https://aka.ms/MBARAIComponentSettings)).
 
@@ -327,6 +327,8 @@ insights_pipeline_job.outputs.ux_json = Output(
 # submit and run pipeline
 insights_job = submit_and_wait(ml_client, insights_pipeline_job)
 ```
+
+The job will take about 6 minutes to run. 
 
 To monitor the progress of the pipeline job, click on the Jobs icon from the [Azure ML studio](https://aka.ms/MBAzureMLStudio). By clicking on the pipeline job, you can get the status.
 
@@ -424,10 +426,12 @@ This means the model is correctly predicting that patients will not be readmitte
 
 There are cases where you’ll need to isolate your data by focusing on a specific feature to drill-down on a granular level to determine if the feature is a key contributor to the model’s poor performance. The RAI dashboard has built-in intelligence to divide the selected feature values into various meaningful cohorts for users to do feature-based analysis and compare where in the data the model is not doing well.
 
+![](/img/1-mo-feature-pane.png)
+
 To look closer at what impact the *"Prior_Inpatient"* feature has to the model's performance:
 
-1. Switch to the "Feature cohorts" tab. 
-2. Under the “Feature(s)” drop-down menu, scroll down the list and select the “Prior_Inpatient” checkbox. This will display 3 different feature cohorts and the model performance metrics.
+1. Under "Model Overview", switch to the **"Feature cohorts"** tab on top of the section.
+2. Under the “Feature(s)” drop-down menu, scroll down the list and select the *“Prior_Inpatient”* checkbox. This will display 3 different feature cohorts and the model performance metrics.
 
 ![](/img/5-mo-feature-cohort.png)
  
