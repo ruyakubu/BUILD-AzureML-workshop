@@ -1,5 +1,26 @@
 In this lab, you’ll learn how to train a model in the cloud, and how to ensure it performs responsibly. We’ll be using the [UCI hospital diabetes dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) to train a classification model using the Scikit-Learn framework. The model will predict whether or not a diabetic patient will be readmitted back to a hospital within 30 days of being discharged.
 
+# [Optional:  Run Locally]
+
+To run this workshop locally you need the following:
+1. Clone this Github repository.
+   ```shell
+   git clone https://github.com/ruyakubu/BUILD-AzureML-workshop.git
+   ```
+3. Create an [Azure Machine Learning workspace](https://learn.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources?view=azureml-api-2#create-the-workspace)
+4. Open the [Azure Machine Learning studio](https://ml.azure.com), download the [*config.json*](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-configure-environment?view=azureml-api-2) file to a local folder
+5. Copy and paste the *config.json* file in the root directory of the BUILD-AzureML-workshop folder you just cloned.
+6. Open the project folder in an editor such as Visual Studio Code
+7. Open a command terminal and login into Azure.
+   ```bash
+   az login
+   ```
+8. Create a python environment by running the following command:
+   ```bash
+   conda env update --file lib/environment.yml
+   ```
+10. Then open the *1-compute-training-job-cloud.ipynb* notebook.
+11. In VS code, click on "Select Kernel".  Then under **Python Environments**, select the *build-2023* environment you just created
 
 # Exercise 1: Training a model in the cloud
 
