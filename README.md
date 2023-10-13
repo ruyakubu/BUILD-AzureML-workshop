@@ -27,12 +27,8 @@ To run this workshop locally you need the following:
 
 In this exercise, you'll train a custom model using Azure ML. Training in the cloud allows you to scale your training to use more compute power, and to track model versions.
 
-## Setup
-1. Create an [Azure Machine Learning workspace](https://learn.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources?view=azureml-api-2#create-the-workspace)
-2. Open the Azure Machine Learning studio at https://ml.azure.com
-3. Then open the *1-compute-training-job-cloud.ipynb* notebook.
-4. Click on the **Run All** button on the top of the notebook to run the notebook.
-
+1. Then open the *1-compute-training-job-cloud.ipynb* notebook.
+2. Click on the **Run All** button on the top of the notebook to run the notebook.
 
 ## Task 1: Understand the training code
 
