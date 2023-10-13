@@ -29,6 +29,7 @@ In this exercise, you'll train a custom model using Azure ML. Training in the cl
 
 1. Then open the *1-compute-training-job-cloud.ipynb* notebook.
 2. Click on the **Run All** button on the top of the notebook to run the notebook.
+   
 
 ## Task 1: Understand the training code
 
