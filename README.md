@@ -218,9 +218,8 @@ You can check that the model is registered by looking for the model name in the 
 In this exercise, you’ll be learning how to create the Responsible AI dashboard to use the model you trained in the previous exercise. The dashboard is comprised of different components to enable you to debug and analyze the model performance, identify errors, conduct fairness assessment, evaluate performance model interpretability and more.
 
 ## Prerequisites
-1. Open the Azure Machine Learning studio at https://ml.azure.com
-2. Then open the *2-create-responsibleai-dashboard.ipynb* notebook from the lab directory
-3. Click on the **Run All** button on the top of the notebook to run the notebook
+1. Open the *2-create-responsibleai-dashboard.ipynb* notebook from the lab directory
+2. Click on the **Run All** button on the top of the notebook to run the notebook
 
 ## Get trained model information
 Similar to the previous exercise, you need to create an ML client session again to authenticate and connect to the Azure Machine Learning studio. 
