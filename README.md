@@ -222,6 +222,34 @@ In this exercise, you’ll be learning how to create the Responsible AI dashboar
 2. Then open the *2-create-responsibleai-dashboard.ipynb* notebook from the lab directory
 3. Click on the **Run All** button on the top of the notebook to run the notebook
 
+## Get trained model information
+Similar to the previous exercise, you need to create an ML client session again to authenticate and connect to the Azure Machine Learning studio. 
+
+Before you can create the RAI dashboard, you need to get the model information from the model you trained in the previous exercise.  The model information includes the model name and the MLFlow model output path. 
+
+``` python
+model_name = 'hospital_readmission_model'
+model = ml_client.models.get(name=model_name, label='latest')
+``` 
+The RAI dashboard needs to understand which features from our dataset are not numeric (excluding the target column we are trying to predict).  So, we need to get the categorical column names from the training dataset. 
+
+``` python
+
+def get_categorical_numerical_data(dataset):
+    dataset = dataset.drop([target_column], axis = 1)  
+    categorical = []
+    for col, value in dataset.iteritems():
+        if value.dtype == 'object' or value.dtype == 'bool':
+            categorical.append(col)
+    numerical = dataset.columns.difference(categorical)
+    return categorical, numerical
+
+# get categorical and numerical fields from training data
+train_data = pd.read_parquet('data/training_data.parquet')
+categorical, numerical = get_categorical_numerical_data(train_data)
+```
+These model information is needed in initializing the RAI dashboard components.
+
 ## Task 1: Define the dashboard components
 
 The Responsible AI dashboard components are already pre-defined in the Azure Machine Learning studio. To use the components, you need to submit the component name and version to the Azure Machine Learning client’s session created in the previous exercise. The user has the option to add as many components they want on the Responsible AI dashboard. The components you’ll be using are:
@@ -259,6 +287,17 @@ When you have specified the RAI components you need, it is time to define an [Az
 
 To define the pipeline for the RAI Dashboard, declare the experiment name, description and the name of the compute server that will be running the pipeline job. We use the [dsl.pipeline](https://docs.microsoft.com/python/api/azure-ai-ml/azure.ai.ml.dsl?view=azure-python-preview%22%20%5Ct%20%22_blank) annotation above the pipeline function to specify these fields.
 
+``` python
+@dsl.pipeline(
+        compute=compute_name,
+        description="RAI computation on hospital readmit classification data",
+        experiment_name=f"RAI_hospital_Classification_RAIInsights_Computation_{model_name_suffix}",
+    )
+def rai_classification_pipeline(
+        target_column_name,
+        training_data,
+        testing_data)
+``` 
 The RAI constructor component is what initializes the global data needed for the different components for the RAI dashboard. The constructor component takes the following parameters:
 
 * *title* - The title of the dashboard.
@@ -269,6 +308,8 @@ The RAI constructor component is what initializes the global data needed for the
 * *test_dataset* - the registered testing dataset location 
 * *target_column_name* - the target column our model is trying to predict
 * *categorical_column_names* - the columns in our dataset that have non-numeric values
+
+We set the timeout to 2400 seconds to give the pipeline job enough time to complete running each component.
 
 ``` python
         # Initiate the RAIInsights
@@ -282,39 +323,40 @@ The RAI constructor component is what initializes the global data needed for the
             target_column_name=target_column_name,
             categorical_column_names=json.dumps(categorical),
         )
-        create_rai_job.set_limits(timeout=120)
+        create_rai_job.set_limits(timeout=2400)
 ``` 
 
 The Explanation component is responsible for the dashboard providing a better understanding of what features influence the model’s predictions. It takes a comment that is a description field. Then sets the *rai_insights_dashboard* to be the output insights generated from the RAI pipeline job for Explanations.
 
 ``` python
-        # Explanation
+        # Add an explanation
         explanation_job = rai_explanation_component(
             comment='Explain the model',
             rai_insights_dashboard=create_rai_job.outputs.rai_insights_dashboard,
         )
-        explanation_job.set_limits(timeout=120)
+        explanation_job.set_limits(timeout=2400)
 ```
 
 The Error Analysis component is responsible for the dashboard providing an error distribution of the feature groups contributing to the model inaccuracies. Its only configuration is to set the *rai_insights_dashboard* to be the output insights generated from the RAI pipeline job for the overall and feature error rates.
 
 ``` python
-        # Error Analysis
+        # Add error analysis
         erroranalysis_job = rai_erroranalysis_component(
             rai_insights_dashboard=create_rai_job.outputs.rai_insights_dashboard,
         )
-        erroranalysis_job.set_limits(timeout=120)
+        erroranalysis_job.set_limits(timeout=2400)
 ```
 
 Once all the RAI components are configured with the parameters needed for the use case, the next thing to do is add all of them into the list of insights to include on the RAI dashboard. Then upload the dashboard instance and UX settings for the RAI Dashboard.
 
 ``` python
+         # Combine everything
         rai_gather_job = rai_gather_component(
             constructor=create_rai_job.outputs.rai_insights_dashboard,
             insight_1=explain_job.outputs.explanation,
             insight_4=erroranalysis_job.outputs.error_analysis,
         )
-        rai_gather_job.set_limits(timeout=120)
+        rai_gather_job.set_limits(timeout=2400)
 ```
 
 The pipeline job outputs are the dashboard and UX configuration to be displayed.
@@ -382,7 +424,7 @@ The Tree Map from the Error Analysis provides visual indicators to help in locat
 
 ![Tree Map](/img/1-ea-treemap.png)
 
-In the above diagram, the first thing we observe from the root node is that out of the **697** total test records, the component found **98** incorrect predictions while evaluating the model.  To investigate where there are high error rates with the patients, we will create cohorts for the groups of patients.
+In the above diagram, the first thing we observe from the root node is that out of the **697** total test records, the component found **98** incorrect predictions while evaluating the model (**NOTE** *your values may be slight different*).  To investigate where there are high error rates with the patients, we will create cohorts for the groups of patients.
 
 1. Find the leaf node with the darkest shade of red color.  Then, double-click on the leaf node to select all nodes in the path leading up to the node. This will highlight the path and display the feature condition for each node in the path.
 
