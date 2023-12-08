@@ -423,7 +423,7 @@ The Tree Map from the Error Analysis provides visual indicators to help in locat
 
 ![Tree Map](/img/1-ea-treemap.png)
 
-In the above diagram, the first thing we observe from the root node is that out of the **697** total test records, the component found **98** incorrect predictions while evaluating the model (**NOTE** *your values may be slight different*).  To investigate where there are high error rates with the patients, we will create cohorts for the groups of patients.
+In the above diagram, the first thing we observe from the root node is that out of the **696** total test records, the component found **112** incorrect predictions while evaluating the model (**NOTE** *your values may be slightly different*).  To investigate where there are high error rates with the patients, we will create cohorts for the groups of patients.
 
 1. Find the leaf node with the darkest shade of red color.  Then, double-click on the leaf node to select all nodes in the path leading up to the node. This will highlight the path and display the feature condition for each node in the path.
 
@@ -431,12 +431,14 @@ In the above diagram, the first thing we observe from the root node is that out 
 
 2. Click on the **Save as a new cohort** button on the upper right-hand side of the error analysis component. 
 
-3. Enter a name for the cohort: For example: ***Err: Prior_inpatient > 1 && < 4; Num_lab_procedure > 46***.  (**Tip** The "Err:" prefix helps indicate that this cohort has the highest error rate). 
+3. Enter a name for the cohort: For example: ***Err: Prior_inpatient > 0 && Num_lab_procedure > 56***.  (**Tip** The "Err:" prefix helps indicate that this cohort has the highest error rate). 
 
 ![Tree map High error rate](/img/3-ea-save-higherror-cohort.png)
 
 4. Click on the **Save** button to save the cohort.
 5. Click on the **Clear selection** button on the left side of the Tree to clear the selection.
+
+![](/img/5-ea-clear-highest-error.png)
 
 As much as it’s advantageous in finding out why the model is performing poorly, it is equally important to figure out what’s causing our model to perform well for some data cohorts.  So, we’ll need to find the tree path with the least number of errors to gain insights as to why the model is performing better in this cohort vs others. 
 
@@ -446,7 +448,7 @@ As much as it’s advantageous in finding out why the model is performing poorly
 
 2. Click on the **Save as a new cohort** button on the upper right-hand side of the error analysis component. 
 
-3. Enter a name for the cohort: For example: ***Prior_inpatient = 0 && < 3; Num_lab_procedure < 27***.  
+3. Enter a name for the cohort: For example: ***Prior_inpatient = 0; gender=F && Num_lab_procedure < 9***.  
 
 ![Tree map High error rate](/img/5-ea-save-lowerror-cohort.png)
 
