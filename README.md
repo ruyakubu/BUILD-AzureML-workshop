@@ -471,19 +471,19 @@ To compare the model’s behavior across the different cohorts you created in th
 
 *Accuracy Score*
 
-* The “All data” cohort has a good overall accuracy score of 0.859 with a sample size of 697 results in the test dataset.
-* The cohort with the lowest error rate has a great accuracy score of 0.962. Although, the sample size of 105 patients is small.
-* The erroneous cohort with the highest error rate has a poor accuracy score of 0.455. However, the sample size of 22 is a very small number of patients for this cohort, which the model is not performing well on.
+* The “All data” cohort has a good overall accuracy score of 0.839 with a sample size of 696 results in the test dataset.
+* The cohort with the lowest error rate has a great accuracy score of 1. Although, the sample size of 29 patients is small.
+* The erroneous cohort with the highest error rate has a poor accuracy score of 0.59. However, the sample size of 39 is a very small number of patients for this cohort, which the model is not performing well on.
 
 *False Positive Rate*
 
-* The False Positive rates are close to 0 for all cohorts; meaning there’s a small number of cases where the model is incorrectly predicting that patients are going to be *readmitted*, when the actual outcome is *not readmitted*.
+* The False Positive rates are close to 0 for all cohorts; meaning there’s a small number of cases where the model is incorrectly predicting that patients are going to be *readmitted*, when the actual outcome should be *not readmitted*.
 
 *False Negative Rate*
 
 * On the contrary, the False Negative rate are close to 1, which is high. This indicates that there’s a high number of cases where the model is incorrectly predicting that a patient will be *not readmitted*. The actual outcome is they will be *readmitted* in 30 days back to the hospital.
 
-This means the model is correctly predicting that patients will not be readmitted back to the hospital in 30 days a majority of the time.  However, the model is less confident in correctly predicting patients who will be readmitted within 30 days back to the hospital.
+This means the model is correctly predicting that patients will not be readmitted back to the hospital in 30 days a majority of the time.  However, the model is having trouble in correctly predicting patients who will be readmitted within 30 days back to the hospital.
 
 ***Feature cohort analysis***
 
@@ -498,19 +498,19 @@ To look closer at what impact the *"Prior_Inpatient"* feature has to the model's
 
 ![](/img/5-mo-feature-cohort.png)
  
-* We see that the *prior_inpatient < 3.67* cohort has a sample size of 671. This means a majority of patients in the test data were hospitalized less than 4 times in the past.
+* We see that the *prior_inpatient < 3.67* cohort has a sample size of 675. This means a majority of patients in the test data were hospitalized less than 4 times in the past.
 
-  * The model’s accuracy rate for this cohort is 0.86, which is good.
-  * The model has a very high false negative rate of 0.989, which suggests that model is incorrectly predicting readmitted patients as not readmitted. This is consistent with our findings in the dataset cohort findings above.
+  * The model’s accuracy rate for this cohort is 0.844, which is good.
+  * The model has a very high false negative rate of 0.936, which suggests that model is incorrectly predicting readmitted patients as not readmitted. This is consistent with our findings in the dataset cohort findings above.
 
-* Only 18 patients from the test data fall in the *prior_inpatient ≥ 3.67 and < 7.33* cohort.
+* Only 17 patients from the test data fall in the *prior_inpatient ≥ 3.67 and < 7.33* cohort.
 
-  * The model’s accuracy rate is 0.778, which is a low confidence.
-  * For this cohort, the model false negative is 0, meaning the model is correctly predicting patients that will be readmitted. The false positive rate of 0.444, means ths model is falsely predicting patients that will be readmitted almost half the time for this cohort.  However, the sample size of 18 patients is too small to make any conclusions.
+  * The model’s accuracy rate is 0.647, which is a low confidence.
+  * For this cohort, the model false negative is 0, meaning the model is correctly predicting patients that will be readmitted. The false positive rate of 0.847, means ths model is falsely predicting patients that will be readmitted almost half the time for this cohort.  However, the sample size of 17 patients is too small to make any conclusions.
 
-* Lastly, there are just 8 patients from the *prior_inpatient >= 7.33* cohort.
+* Lastly, there are just 4 patients from the *prior_inpatient >= 7.33* cohort.
 
-  * The model accuracy of 1 for this cohort means there are no inaccuracies.  So, there are no false positive and false negative rates.  Since the sample size of 8 is too small, we can’t make any conclusions.
+  * The model accuracy of 0.75 for this cohort means there are no inaccuracies.  So, there are no false positive and false negative rates.  Since the sample size of 4 is too small, we can’t make any conclusions.
  
 ## Task 3: Data Analysis
 
@@ -533,7 +533,7 @@ Let’s start by looking at the actual number of patients that were not readmitt
 
 ![True Y count](/img/2-da-count-truey.png)
 
-We can see that from the actual dataset values, out of the 697 diabetes patients represented in our test data, 587 patients are not readmitted and 110 are readmitted to a hospital within 30 days.
+We can see that from the actual dataset values, out of the 696 diabetes patients represented in our test data, 573 patients are not readmitted and 123 are readmitted to a hospital within 30 days.
   * This imbalance of data can cause the model not to learn well due to not having enough data representation of readmitted patients.  
   * This is consistent with the high false positive rates in the last exercise.
 
@@ -546,7 +546,7 @@ To examine the race distribution:
 3. Then under “select feature”, select “race” on the drop-down menu.
 4. On the x-axis keep the “count” selected.
 
-We see race disparities where Caucasians represent 73% of patients in the test data; African-Americans make up 21% patients; and Hispanics represent 3% of patients. This shows a data imbalance between the different ethnicities, which can lead to racial biases and fairness issues.  
+We see race disparities where Caucasians represent 75% of patients in the test data; African-Americans make up 20% patients; and Hispanics represent 2% of patients. This shows a data representation between the different ethnicities, which can lead to racial biases and fairness issues.  Therefore, this model cannot be used in a demograhic with high African-American or Hispanic populations.
 
 ![Race count](/img/4-da-race-count.png)
 
