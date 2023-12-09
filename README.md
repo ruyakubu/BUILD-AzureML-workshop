@@ -498,7 +498,7 @@ To look closer at what impact the *"Prior_Inpatient"* feature has to the model's
 
 ![](/img/5-mo-feature-cohort.png)
  
-* We see that the *prior_inpatient < 3.67* cohort has a sample size of 400. This means a majority of patients in the test data were hospitalized less than 4 times in the past.
+* We see that the *prior_inpatient < 3.67* cohort has a sample size of 675. This means a majority of patients in the test data were hospitalized less than 4 times in the past.
 
   * The model’s accuracy rate for this cohort is 0.844, which is good.
   * The model has a very high false negative rate of 0.936, which suggests that model is incorrectly predicting readmitted patients as not readmitted. This is consistent with our findings in the dataset cohort findings above.
@@ -584,7 +584,7 @@ To explore, we’re going to:
 
 ![Individual Feature influence](/img/3-fi-individual-influence.png)
 
-2. Next, under the "Incorrect predictions" we’ll select record index #679. 
+2. Next, under the "Incorrect predictions" we’ll select record index #400. 
 
 This will generate a Feature Important plot chart under the Table view. Here we see that “age”, “diabetes_Med_prescribe” and “insulin” are the top 3 features contributing to positively drive our model incorrectly predicting that the selected patient will not be readmitted within 30 days (the actual outcome should be Readmitted).
 
