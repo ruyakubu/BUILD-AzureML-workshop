@@ -498,7 +498,7 @@ To look closer at what impact the *"Prior_Inpatient"* feature has to the model's
 
 ![](/img/5-mo-feature-cohort.png)
  
-* We see that the *prior_inpatient < 3.67* cohort has a sample size of 675. This means a majority of patients in the test data were hospitalized less than 4 times in the past.
+* We see that the *prior_inpatient < 3.67* cohort has a sample size of 400. This means a majority of patients in the test data were hospitalized less than 4 times in the past.
 
   * The model’s accuracy rate for this cohort is 0.844, which is good.
   * The model has a very high false negative rate of 0.936, which suggests that model is incorrectly predicting readmitted patients as not readmitted. This is consistent with our findings in the dataset cohort findings above.
@@ -560,7 +560,7 @@ Age is not proportionately distributed across our data, as seen in our three age
 
 As you can see from all the data analysis we performed, data is a significant blind spot that is often missed when evaluating model performance. After tuning a model, you can increase accuracy scores, but that does not mean you have a model that is fair and inclusive.
 
-## Task 4: Feature Importance
+## Task 4: Feature Importance 
 
 Examining a model is not just about understanding how accurately it can make a prediction, but also why it made the prediction. In some case a model has adverse behavior or makes a mistake that can be harmful to individuals or society. Some industries have compliance regulations that require organizations to provide an explanation for how and why a model made the prediction it did. In this exercise, we will use the Feature Importance component to understand what features have the most influence on a model’s prediction.
 
@@ -570,7 +570,7 @@ The Feature Importance component enables users to get a comprehensive understand
 
 ![Global explanation](/img/1-fi-global-explanation.png)
 
-Users can toggle the slider back-and-forth on top of the chart to display all the features, which are ordered in descending order of importance on the x-axis. The y-axis shows how much weight a feature has in driving a model’s prediction in comparison to the rest of the other features. The color of bar(s) on the chart corresponds to the cohorts created on the dashboard. In the diagram, it looks like *prior_inpatient*, *discharge_destination*, *diabetes_Med_prescribe*, *race*, and *prior_emergency* are the top 5 features driving our diabetic hospital readmission classification model predictions.
+Users can toggle the slider back-and-forth on top of the chart to display all the features, which are ordered in descending order of importance on the x-axis. The y-axis shows how much weight a feature has in driving a model’s prediction in comparison to the rest of the other features. The color of bar(s) on the chart corresponds to the cohorts created on the dashboard. In the diagram, it looks like *prior_inpatient*, *number_diagnoses*, *discharge_destination*, *diabetes_Med_prescribe*, *insulin*, and *prior_emergency* are the top 5 features driving our diabetic hospital readmission classification model predictions.
 
 Having a sensitive feature such as race that is one of the top 5 features driving our model’s predictions, is a red flag for potential fairness issues. This is an area where ML professionals can intervene to make sure the model does not make any racial bias predictions.
 
